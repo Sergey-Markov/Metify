@@ -6,7 +6,7 @@
  */
 
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -16,8 +16,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COUNTRIES } from "../../src/constants";
 import { useOnboardingForm } from "../../src/hooks";
@@ -30,6 +33,8 @@ import type {
 } from "../../src/types";
 
 const STEPS = ["Про вас", "Спосіб життя", "Результат"] as const;
+
+const BIRTH_DATE_MIN = new Date(1900, 0, 1);
 
 export default function OnboardingScreen() {
   const { profile, setField, setLifestyle, submit } = useOnboardingForm();
@@ -88,13 +93,9 @@ export default function OnboardingScreen() {
             </Text>
 
             <FieldLabel>Дата народження</FieldLabel>
-            <TextInput
-              style={s.input}
-              placeholder="РРРР-ММ-ДД"
-              placeholderTextColor={colors.muted}
-              value={profile.dateOfBirth}
-              onChangeText={(v) => setField("dateOfBirth", v)}
-              keyboardType="numbers-and-punctuation"
+            <BirthDateField
+              valueYmd={profile.dateOfBirth}
+              onChangeYmd={(v) => setField("dateOfBirth", v)}
             />
 
             <FieldLabel>Стать</FieldLabel>
@@ -234,6 +235,130 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <Text style={s.fieldLabel}>{children}</Text>;
 }
 
+function parseYmd(ymd: string): Date {
+  const [y, mo, d] = ymd.split("-").map((n) => Number.parseInt(n, 10));
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) {
+    return new Date(1990, 0, 1);
+  }
+  return new Date(y, mo - 1, d);
+}
+
+function toYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatBirthUk(ymd: string): string {
+  try {
+    return new Intl.DateTimeFormat("uk-UA", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(parseYmd(ymd));
+  } catch {
+    return ymd;
+  }
+}
+
+function BirthDateField({
+  valueYmd,
+  onChangeYmd,
+}: {
+  valueYmd: string;
+  onChangeYmd: (v: string) => void;
+}) {
+  const [androidOpen, setAndroidOpen] = useState(false);
+  const ymd = valueYmd || "1990-01-01";
+  const date = useMemo(() => parseYmd(ymd), [ymd]);
+  const maximumDate = useMemo(() => new Date(), []);
+
+  const onChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === "android") {
+      setAndroidOpen(false);
+      if (event.type === "set" && selected) {
+        onChangeYmd(toYmd(selected));
+      }
+      return;
+    }
+    if (selected) {
+      onChangeYmd(toYmd(selected));
+    }
+  };
+
+  if (Platform.OS === "web") {
+    return (
+      <TextInput
+        style={s.input}
+        placeholder="РРРР-ММ-ДД"
+        placeholderTextColor={colors.muted}
+        value={valueYmd}
+        onChangeText={onChangeYmd}
+        keyboardType="numbers-and-punctuation"
+        accessibilityLabel="Дата народження, формат РРРР-ММ-ДД"
+      />
+    );
+  }
+
+  return (
+    <View>
+      {Platform.OS === "android" ? (
+        <>
+          <TouchableOpacity
+            style={s.dateTrigger}
+            onPress={() => setAndroidOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Обрати дату народження"
+          >
+            <Text style={s.dateTriggerText}>{formatBirthUk(ymd)}</Text>
+            <Text style={s.dateTriggerHint}>Натисніть, щоб змінити</Text>
+          </TouchableOpacity>
+          {androidOpen ? (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              design="material"
+              title="Дата народження"
+              onChange={onChange}
+              minimumDate={BIRTH_DATE_MIN}
+              maximumDate={maximumDate}
+              positiveButton={{
+                label: "Готово",
+                textColor: colors.accent,
+              }}
+              negativeButton={{
+                label: "Скасувати",
+                textColor: colors.muted,
+              }}
+            />
+          ) : null}
+        </>
+      ) : (
+        <View
+          style={s.datePickerWrap}
+          accessibilityLabel="Вибір дати народження"
+        >
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="spinner"
+            onChange={onChange}
+            minimumDate={BIRTH_DATE_MIN}
+            maximumDate={maximumDate}
+            locale="uk_UA"
+            themeVariant="dark"
+            textColor={colors.text}
+            accentColor={colors.accent}
+            style={{ backgroundColor: colors.bg2 }}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 interface Option {
   value: string;
   label: string;
@@ -370,6 +495,23 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     color: colors.text,
     fontSize: 15,
+  },
+  dateTrigger: {
+    backgroundColor: colors.bg2,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  dateTriggerText: { fontSize: 16, color: colors.text },
+  dateTriggerHint: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  datePickerWrap: {
+    backgroundColor: colors.bg2,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   optRow: { flexDirection: "row", gap: 8 },
   optBtn: {
