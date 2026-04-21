@@ -1,0 +1,221 @@
+---
+alwaysApply: true
+---
+
+You are a senior full-stack engineer and product architect.
+
+Your task is to design and partially implement an MVP mobile application called **"LifeTimer"** — a psychological and productivity-focused app that visualizes a person's remaining lifetime as a calm, motivating countdown.
+
+## 🧠 Core Idea
+
+The app shows a **life countdown timer** based on estimated lifespan. The goal is NOT to scare users, but to gently motivate them to value time.
+
+## 🎯 Main Features
+
+### 1. Onboarding
+
+* Ask user for:
+
+  * Date of birth
+  * Country
+  * Gender (optional)
+  * Lifestyle inputs:
+
+    * Smoking (yes/no)
+    * Alcohol (low/medium/high)
+    * Activity level (low/medium/high)
+    * Sleep quality
+* Option to skip and use average life expectancy
+
+### 2. Life Expectancy Calculation
+
+#### Simple Mode:
+
+* Use average life expectancy based on country
+
+#### AI Mode:
+
+* Estimate lifespan using weighted factors:
+
+  * Base life expectancy (country)
+  * -5 to -10 years (smoking)
+  * +3 to +7 years (high activity)
+  * -2 to -5 years (poor sleep)
+* Return estimated death date
+
+### 3. Countdown Timer (Main Screen)
+
+* Large, beautiful countdown:
+
+  * Years / Months / Days / Hours remaining
+* Calm UI (dark gradient, soft colors)
+* Motivational text (e.g. “Make today count”)
+
+### 4. Time Visualization
+
+* Life in weeks (grid of 90 years × 52 weeks)
+* Passed weeks filled, remaining faded
+
+### 5. Daily Motivation
+
+* Show 1 short message per day
+* Examples:
+
+  * “You still have 12,000 mornings”
+  * “Time is your most valuable asset”
+
+### 6. Optional Features (structure only)
+
+* Goals system
+* Habit tracking
+* “Time spent wisely” analytics
+
+---
+
+## 🧱 Tech Stack
+
+### Mobile App
+
+* Expo (React Native)
+* TypeScript
+* Expo Router (file-based routing)
+* Zustand or Context API
+
+### Backend
+
+* Node.js + Express
+* MongoDB (Mongoose)
+
+### AI Logic
+
+* Simple local algorithm (no external API required for MVP)
+
+---
+
+## 🗂 Folder Structure (Frontend)
+
+/app
+/onboarding
+/home
+/stats
+/components
+/hooks
+/utils
+/store
+
+---
+
+## 🧩 Required Implementation
+
+1. Create:
+
+   * Onboarding screen (form)
+   * Home screen with countdown timer
+   * Utility function:
+     `calculateLifeExpectancy(userData)`
+
+2. Timer logic:
+
+   * Calculate remaining time from current date to estimated death date
+   * Update every second
+
+3. UI:
+
+   * Dark theme
+   * Minimalistic
+   * Smooth animations (use Reanimated or basic Animated API)
+
+---
+
+## ⚙️ Output Requirements
+
+* Provide working code for:
+
+  * Onboarding screen
+  * Countdown timer screen
+  * Life expectancy calculation function
+* Use clean architecture and best practices
+* Keep code modular and scalable
+
+---
+
+## ⚠️ UX Notes
+
+* Avoid fear-based language
+* Use calm and premium tone
+* Focus on awareness, not anxiety
+
+---
+
+## 🚀 Goal
+
+Deliver a functional MVP that can be expanded into:
+
+* AI-driven life insights
+* Premium subscription model
+* Deep personalization
+
+Start by generating the frontend screens and core logic.
+
+## 🔥 Add a Viral Killer Feature
+
+Add a core viral feature called **"AI Life Mirror"**.
+
+### Feature concept
+
+Transform the user's estimated remaining lifetime into emotionally meaningful units, not just years and days.
+
+Examples:
+
+* Days left
+* Weekends left
+* Summers left
+* New Years left
+* Mornings left
+* Possible workouts left (based on habit frequency)
+* Time with parents left (based on visit frequency)
+* Time lost to social media scrolling
+
+### Requirements
+
+1. Create a screen called **Life Mirror**
+2. Show data as elegant cards with strong emotional but calm messaging
+3. Generate a **shareable card** for social media with:
+
+   * dark premium gradient background
+   * large key metric
+   * short reflection sentence
+   * minimal modern UI
+4. Add comparison mode:
+
+   * **Current lifestyle**
+   * **Improved lifestyle**
+   * show gained days / weekends / summers if habits improve
+5. Tone must be:
+
+   * reflective
+   * premium
+   * motivational
+   * never fear-based
+
+### UX goal
+
+The user should feel:
+
+* awareness
+* urgency
+* hope
+* desire to share the result
+
+### Example outputs
+
+* “You have about 1,124 Saturdays left.”
+* “With better sleep and activity, you may gain 2,031 extra days.”
+* “Your future is still wide enough to change.”
+
+Implement:
+
+* Life Mirror screen
+* helper functions to convert lifespan into emotional metrics
+* reusable share card component
+* comparison logic between current and improved lifestyle
