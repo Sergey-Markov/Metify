@@ -1,6 +1,9 @@
 import { Tabs } from "expo-router";
-import { Text, Platform, StyleSheet } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const ICON_SIZE = 22;
 
 const ACCENT = "#c8a96e";
 const MUTED = "#8a8a9a";
@@ -40,10 +43,13 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: "Таймер",
-          tabBarIcon: ({ color }) => (
-            <Text accessible={false} style={{ color, fontSize: 18 }}>
-              ◎
-            </Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              accessible={false}
+              name={focused ? "hourglass" : "hourglass-outline"}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
           tabBarAccessibilityLabel: "Таймер життя",
         }}
@@ -52,10 +58,13 @@ export default function TabsLayout() {
         name="goals"
         options={{
           title: "Цілі",
-          tabBarIcon: ({ color }) => (
-            <Text accessible={false} style={{ color, fontSize: 18 }}>
-              ✦
-            </Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              accessible={false}
+              name={focused ? "flag" : "flag-outline"}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
           tabBarAccessibilityLabel: "Цілі",
         }}
@@ -64,12 +73,30 @@ export default function TabsLayout() {
         name="habits"
         options={{
           title: "Звички",
-          tabBarIcon: ({ color }) => (
-            <Text accessible={false} style={{ color, fontSize: 18 }}>
-              ▦
-            </Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              accessible={false}
+              name={focused ? "repeat" : "repeat-outline"}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
           tabBarAccessibilityLabel: "Звички",
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Профіль",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              accessible={false}
+              name={focused ? "person-circle" : "person-circle-outline"}
+              size={ICON_SIZE}
+              color={color}
+            />
+          ),
+          tabBarAccessibilityLabel: "Профіль",
         }}
       />
     </Tabs>
