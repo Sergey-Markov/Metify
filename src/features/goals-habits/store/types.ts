@@ -17,6 +17,12 @@ export interface GoalsHabitsState {
   deleteGoal: (id: string) => void;
   addMilestone: (goalId: string, title: string) => void;
   toggleMilestone: (goalId: string, milestoneId: string) => void;
+  updateMilestoneTitle: (
+    goalId: string,
+    milestoneId: string,
+    title: string,
+  ) => void;
+  deleteMilestone: (goalId: string, milestoneId: string) => void;
 
   addHabit: (draft: AddHabitDraft) => void;
   updateHabit: (id: string, patch: Partial<Habit>) => void;
