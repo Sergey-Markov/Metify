@@ -6,6 +6,7 @@ import {
   useNavigationContainerRef,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
@@ -68,16 +69,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <AuthGate>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: "#0a0b0f" },
-            animation: "slide_from_right",
-          }}
-        />
-      </AuthGate>
+      <KeyboardProvider>
+        <StatusBar style="light" />
+        <AuthGate>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#0a0b0f" },
+              animation: "slide_from_right",
+            }}
+          />
+        </AuthGate>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

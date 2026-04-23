@@ -5,6 +5,9 @@
  * Screen is purely presentational — all state lives in useOnboardingForm().
  */
 
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -16,9 +19,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 

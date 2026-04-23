@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import {
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Goal, GoalCategory, GoalPriority } from "../types/goalsHabits";
 import { daysUntilGoal } from "../utils/goalsHabits";
@@ -211,6 +212,8 @@ const styles = StyleSheet.create({
   closeSheetBtnText: { fontSize: 14, color: colors.accent },
 });
 
+const KEYBOARD_AWARE_BOTTOM_OFFSET = 32;
+
 export type GoalDetailSheetProps = {
   goal: Goal;
   onClose: () => void;
@@ -226,6 +229,7 @@ export const GoalDetailSheet = ({
   onToggleMilestone,
   onAddMilestone,
 }: GoalDetailSheetProps) => {
+  const insets = useSafeAreaInsets();
   const [newMs, setNewMs] = useState("");
   const catColor = CAT_COLORS[goal.category] ?? colors.muted;
   const daysLeft = daysUntilGoal(goal);
@@ -254,7 +258,13 @@ export const GoalDetailSheet = ({
       >
         <View style={styles.sheetHandle} />
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bottomOffset={insets.bottom + KEYBOARD_AWARE_BOTTOM_OFFSET}
+          extraKeyboardSpace={12}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
           <View style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}>
             <View style={styles.detailTopRow}>
               <View
@@ -373,7 +383,7 @@ export const GoalDetailSheet = ({
           </View>
 
           <View style={{ height: 20 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </Animated.View>
     </Animated.View>
   );

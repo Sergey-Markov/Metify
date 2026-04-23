@@ -1,5 +1,9 @@
-import React, { useState } from "react";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import React, { useMemo, useState } from "react";
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -9,9 +13,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { Goal, GoalCategory, GoalPriority, Milestone } from "../types/goalsHabits";
+import type {
+  Goal,
+  GoalCategory,
+  GoalPriority,
+  Milestone,
+} from "../types/goalsHabits";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
@@ -56,6 +72,49 @@ const PRI_COLORS: Record<GoalPriority, string> = {
   medium: "#c8a96e",
   low: "#8a8a9a",
 };
+
+function startOfLocalToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function clampDate(d: Date, min: Date, max: Date): Date {
+  const t = d.getTime();
+  const tMin = min.getTime();
+  const tMax = max.getTime();
+  if (t < tMin) return new Date(tMin);
+  if (t > tMax) return new Date(tMax);
+  return d;
+}
+
+function parseYmd(s: string): Date {
+  const [y, mo, d] = s.split("-").map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) {
+    return new Date();
+  }
+  return new Date(y, mo - 1, d);
+}
+
+function toYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatDeadlineUk(ymd: string): string {
+  if (!ymd.trim()) return "";
+  try {
+    return new Intl.DateTimeFormat("uk-UA", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(parseYmd(ymd));
+  } catch {
+    return ymd;
+  }
+}
 
 const styles = StyleSheet.create({
   overlay: {
@@ -168,25 +227,124 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btnSaveText: { fontSize: 14, fontWeight: "500", color: colors.bg },
+  dateTrigger: {
+    backgroundColor: colors.bg,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 8,
+  },
+  dateTriggerText: { fontSize: 16, color: colors.text },
+  dateTriggerHint: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  dateClear: {
+    alignSelf: "flex-start",
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
+  dateClearText: { fontSize: 13, color: colors.accent },
+  iosModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  iosModalCard: {
+    backgroundColor: "#111318",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  iosModalToolbar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  iosModalBtn: { paddingVertical: 10, paddingHorizontal: 8 },
+  iosModalBtnText: { fontSize: 16, color: colors.muted },
+  iosModalBtnPrimaryText: {
+    fontSize: 16,
+    color: colors.accent,
+    fontWeight: "600",
+  },
+  datePickerWrap: {
+    backgroundColor: colors.bg,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
 });
 
 export type AddGoalSheetProps = {
   onClose: () => void;
-  onSave: (draft: Omit<Goal, "id" | "createdAt" | "status" | "progress">) => void;
+  onSave: (
+    draft: Omit<Goal, "id" | "createdAt" | "status" | "progress">,
+  ) => void;
 };
 
+const KEYBOARD_AWARE_BOTTOM_OFFSET = 56;
+
 export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<GoalCategory>("growth");
   const [priority, setPriority] = useState<GoalPriority>("medium");
   const [targetDate, setTargetDate] = useState("");
   const [milestones, setMilestones] = useState<string[]>([""]);
+  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+  const [iosPickerOpen, setIosPickerOpen] = useState(false);
+  const [iosTempDate, setIosTempDate] = useState(() => new Date());
+
+  const deadlineMinDate = useMemo(() => startOfLocalToday(), []);
+  const deadlineMaxDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 30);
+    return d;
+  }, []);
+
+  const pickerValue = useMemo(
+    () =>
+      clampDate(
+        targetDate.trim() ? parseYmd(targetDate) : new Date(),
+        deadlineMinDate,
+        deadlineMaxDate,
+      ),
+    [targetDate, deadlineMinDate, deadlineMaxDate],
+  );
+
+  const onAndroidDateChange = (event: DateTimePickerEvent, selected?: Date) => {
+    setAndroidPickerOpen(false);
+    if (event.type === "set" && selected) {
+      setTargetDate(toYmd(selected));
+    }
+  };
+
+  const onIosSpinnerChange = (_event: DateTimePickerEvent, selected?: Date) => {
+    if (selected) setIosTempDate(selected);
+  };
+
+  const openIosDeadlinePicker = () => {
+    setIosTempDate(
+      clampDate(
+        targetDate.trim() ? parseYmd(targetDate) : new Date(),
+        deadlineMinDate,
+        deadlineMaxDate,
+      ),
+    );
+    setIosPickerOpen(true);
+  };
 
   const updateMs = (i: number, val: string) => {
     setMilestones((prev) => prev.map((m, idx) => (idx === i ? val : m)));
   };
   const addMsField = () => setMilestones((prev) => [...prev, ""]);
-  const removeMsField = (i: number) => setMilestones((prev) => prev.filter((_, idx) => idx !== i));
+  const removeMsField = (i: number) =>
+    setMilestones((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -197,11 +355,16 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
         title: m.trim(),
         completed: false,
       }));
+    const rawTd = targetDate.trim();
+    const targetDateOut =
+      rawTd === ""
+        ? undefined
+        : toYmd(clampDate(parseYmd(rawTd), deadlineMinDate, deadlineMaxDate));
     onSave({
       title: title.trim(),
       category,
       priority,
-      targetDate: targetDate || undefined,
+      targetDate: targetDateOut,
       milestones: builtMs,
       description: undefined,
     });
@@ -223,7 +386,13 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
         exiting={SlideOutDown}
       >
         <View style={styles.sheetHandle} />
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bottomOffset={insets.bottom + KEYBOARD_AWARE_BOTTOM_OFFSET}
+          extraKeyboardSpace={12}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
           <Text style={styles.sheetTitle}>Нова ціль</Text>
 
           <TextInput
@@ -238,6 +407,7 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
           <Text style={styles.fieldLabel}>Категорія</Text>
           <ScrollView
             horizontal
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             style={{ marginBottom: 14 }}
           >
@@ -253,7 +423,12 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
                 ]}
                 onPress={() => setCategory(c.value)}
               >
-                <View style={[styles.catPillDot, { backgroundColor: CAT_COLORS[c.value] }]} />
+                <View
+                  style={[
+                    styles.catPillDot,
+                    { backgroundColor: CAT_COLORS[c.value] },
+                  ]}
+                />
                 <Text
                   style={[
                     styles.catChipText,
@@ -287,21 +462,181 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
                   ]}
                 >
                   {PRI_LABELS[p]}{" "}
-                  {p === "high" ? "Важливо" : p === "medium" ? "Середній" : "Низький"}
+                  {p === "high"
+                    ? "Важливо"
+                    : p === "medium"
+                      ? "Середній"
+                      : "Низький"}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <Text style={styles.fieldLabel}>{"Дедлайн (необов'язково)"}</Text>
-          <TextInput
-            style={[styles.input, { marginBottom: 20 }]}
-            placeholder="РРРР-ММ-ДД"
-            placeholderTextColor={colors.muted}
-            value={targetDate}
-            onChangeText={setTargetDate}
-            keyboardType="numbers-and-punctuation"
-          />
+          {Platform.OS === "web" ? (
+            <TextInput
+              style={[styles.input, { marginBottom: 20 }]}
+              placeholder="РРРР-ММ-ДД"
+              placeholderTextColor={colors.muted}
+              value={targetDate}
+              onChangeText={setTargetDate}
+              keyboardType="numbers-and-punctuation"
+              accessibilityLabel="Дедлайн, формат РРРР-ММ-ДД"
+            />
+          ) : Platform.OS === "android" ? (
+            <View style={{ marginBottom: 20 }}>
+              <TouchableOpacity
+                style={styles.dateTrigger}
+                onPress={() => setAndroidPickerOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Обрати дедлайн"
+                accessibilityHint="Відкриває календар для вибору дати"
+              >
+                <Text style={styles.dateTriggerText}>
+                  {targetDate.trim()
+                    ? formatDeadlineUk(targetDate)
+                    : "Оберіть дату"}
+                </Text>
+                <Text style={styles.dateTriggerHint}>
+                  {targetDate.trim()
+                    ? "Натисніть, щоб змінити"
+                    : "Необов'язково"}
+                </Text>
+              </TouchableOpacity>
+              {targetDate.trim() ? (
+                <Pressable
+                  style={styles.dateClear}
+                  onPress={() => setTargetDate("")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Прибрати дедлайн"
+                >
+                  <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
+                </Pressable>
+              ) : null}
+              {androidPickerOpen ? (
+                <DateTimePicker
+                  value={pickerValue}
+                  mode="date"
+                  display="default"
+                  design="material"
+                  title="Дедлайн"
+                  onChange={onAndroidDateChange}
+                  minimumDate={deadlineMinDate}
+                  maximumDate={deadlineMaxDate}
+                  positiveButton={{
+                    label: "Готово",
+                    textColor: colors.accent,
+                  }}
+                  negativeButton={{
+                    label: "Скасувати",
+                    textColor: colors.muted,
+                  }}
+                />
+              ) : null}
+            </View>
+          ) : (
+            <View style={{ marginBottom: 20 }}>
+              <TouchableOpacity
+                style={styles.dateTrigger}
+                onPress={openIosDeadlinePicker}
+                accessibilityRole="button"
+                accessibilityLabel="Обрати дедлайн"
+                accessibilityHint="Відкриває вибір дати"
+              >
+                <Text style={styles.dateTriggerText}>
+                  {targetDate.trim()
+                    ? formatDeadlineUk(targetDate)
+                    : "Оберіть дату"}
+                </Text>
+                <Text style={styles.dateTriggerHint}>
+                  {targetDate.trim()
+                    ? "Натисніть, щоб змінити"
+                    : "Необов'язково"}
+                </Text>
+              </TouchableOpacity>
+              {targetDate.trim() ? (
+                <Pressable
+                  style={styles.dateClear}
+                  onPress={() => setTargetDate("")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Прибрати дедлайн"
+                >
+                  <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
+                </Pressable>
+              ) : null}
+              <Modal
+                visible={iosPickerOpen}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setIosPickerOpen(false)}
+              >
+                <Pressable
+                  style={styles.iosModalBackdrop}
+                  onPress={() => setIosPickerOpen(false)}
+                >
+                  <Pressable
+                    style={[
+                      styles.iosModalCard,
+                      { paddingBottom: Math.max(insets.bottom, 16) },
+                    ]}
+                    onPress={(e) => e.stopPropagation()}
+                  >
+                    <View style={styles.iosModalToolbar}>
+                      <Pressable
+                        style={styles.iosModalBtn}
+                        onPress={() => setIosPickerOpen(false)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Скасувати вибір дати"
+                      >
+                        <Text style={styles.iosModalBtnText}>Скасувати</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.iosModalBtn}
+                        onPress={() => {
+                          setTargetDate("");
+                          setIosPickerOpen(false);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Без дедлайну"
+                      >
+                        <Text style={styles.iosModalBtnText}>Без дедлайну</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.iosModalBtn}
+                        onPress={() => {
+                          setTargetDate(toYmd(iosTempDate));
+                          setIosPickerOpen(false);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Підтвердити дедлайн"
+                      >
+                        <Text style={styles.iosModalBtnPrimaryText}>
+                          Готово
+                        </Text>
+                      </Pressable>
+                    </View>
+                    <View
+                      style={styles.datePickerWrap}
+                      accessibilityLabel="Коліщатко вибору дати дедлайну"
+                    >
+                      <DateTimePicker
+                        value={iosTempDate}
+                        mode="date"
+                        display="spinner"
+                        onChange={onIosSpinnerChange}
+                        minimumDate={deadlineMinDate}
+                        maximumDate={deadlineMaxDate}
+                        locale="uk_UA"
+                        themeVariant="dark"
+                        textColor={colors.text}
+                        accentColor={colors.accent}
+                      />
+                    </View>
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            </View>
+          )}
 
           <Text style={styles.fieldLabel}>Кроки до цілі</Text>
           {milestones.map((m, i) => (
@@ -348,7 +683,7 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
             </TouchableOpacity>
           </View>
           <View style={{ height: 20 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </Animated.View>
     </Animated.View>
   );
