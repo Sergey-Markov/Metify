@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -9,9 +8,9 @@ import {
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BottomSheetModal } from "../UI";
 import type { Goal, GoalCategory, GoalPriority } from "../types/goalsHabits";
 import { daysUntilGoal } from "../utils/goalsHabits";
 
@@ -62,28 +61,6 @@ const CATEGORY_LABELS: Record<GoalCategory, string> = {
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "flex-end",
-    zIndex: 100,
-  },
-  sheet: {
-    backgroundColor: "#111318",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 0,
-    maxHeight: "85%",
-  },
-  sheetHandle: {
-    width: 40,
-    height: 3,
-    backgroundColor: colors.subtle,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
   detailBanner: { borderRadius: 16, padding: 16, marginBottom: 20 },
   detailTopRow: {
     flexDirection: "row",
@@ -242,29 +219,14 @@ export const GoalDetailSheet = ({
   };
 
   return (
-    <Animated.View
-      style={styles.overlay}
-      entering={FadeIn}
-      exiting={FadeOut}
-    >
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onClose}
-      />
-      <Animated.View
-        style={styles.sheet}
-        entering={SlideInDown}
-        exiting={SlideOutDown}
+    <BottomSheetModal onClose={onClose}>
+      <KeyboardAwareScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={insets.bottom + KEYBOARD_AWARE_BOTTOM_OFFSET}
+        extraKeyboardSpace={12}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-        <View style={styles.sheetHandle} />
-
-        <KeyboardAwareScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bottomOffset={insets.bottom + KEYBOARD_AWARE_BOTTOM_OFFSET}
-          extraKeyboardSpace={12}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-        >
           <View style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}>
             <View style={styles.detailTopRow}>
               <View
@@ -382,9 +344,8 @@ export const GoalDetailSheet = ({
             </TouchableOpacity>
           </View>
 
-          <View style={{ height: 20 }} />
-        </KeyboardAwareScrollView>
-      </Animated.View>
-    </Animated.View>
+        <View style={{ height: 20 }} />
+      </KeyboardAwareScrollView>
+    </BottomSheetModal>
   );
 };
