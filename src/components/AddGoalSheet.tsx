@@ -1,7 +1,7 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Platform,
@@ -11,14 +11,25 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, {
   FadeIn,
   FadeOut,
+  runOnJS,
   SlideInDown,
   SlideOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -131,13 +142,18 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     maxHeight: "85%",
   },
+  sheetHandleDragZone: {
+    alignSelf: "stretch",
+    alignItems: "center",
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
   sheetHandle: {
     width: 40,
     height: 3,
     backgroundColor: colors.subtle,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 20,
   },
   sheetTitle: {
     fontFamily: SERIF,
@@ -289,8 +305,64 @@ export type AddGoalSheetProps = {
 
 const KEYBOARD_AWARE_BOTTOM_OFFSET = 56;
 
+const SHEET_DRAG_DISMISS_PX = 96;
+const SHEET_DRAG_DISMISS_VELOCITY_Y = 700;
+const SHEET_DRAG_RUBBER_BAND = 0.22;
+const SHEET_DRAG_OFFSCREEN_MS = 240;
+
 export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const translateY = useSharedValue(0);
+  const dragStartY = useSharedValue(0);
+  const offscreenY = useSharedValue(windowHeight);
+
+  useEffect(() => {
+    offscreenY.value = windowHeight;
+  }, [windowHeight, offscreenY]);
+
+  const closeSheet = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const sheetPanGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY(8)
+        .failOffsetX([-28, 28])
+        .onStart(() => {
+          dragStartY.value = translateY.value;
+        })
+        .onUpdate((e) => {
+          const next = dragStartY.value + e.translationY;
+          translateY.value =
+            next > 0 ? next : next * SHEET_DRAG_RUBBER_BAND;
+        })
+        .onEnd((e) => {
+          const shouldDismiss =
+            translateY.value > SHEET_DRAG_DISMISS_PX ||
+            e.velocityY > SHEET_DRAG_DISMISS_VELOCITY_Y;
+          if (shouldDismiss) {
+            translateY.value = withTiming(
+              offscreenY.value,
+              { duration: SHEET_DRAG_OFFSCREEN_MS },
+              (finished) => {
+                if (finished) runOnJS(closeSheet)();
+              },
+            );
+          } else {
+            translateY.value = withSpring(0, {
+              damping: 28,
+              stiffness: 320,
+            });
+          }
+        }),
+    [closeSheet, dragStartY, offscreenY, translateY],
+  );
+
+  const sheetPanStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<GoalCategory>("growth");
   const [priority, setPriority] = useState<GoalPriority>("medium");
@@ -371,21 +443,34 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
   };
 
   return (
-    <Animated.View
-      style={styles.overlay}
-      entering={FadeIn}
-      exiting={FadeOut}
-    >
+    <GestureHandlerRootView style={StyleSheet.absoluteFillObject}>
+      <Animated.View
+        style={styles.overlay}
+        entering={FadeIn}
+        exiting={FadeOut}
+      >
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={onClose}
       />
       <Animated.View
-        style={[styles.sheet, { maxHeight: "90%" }]}
+        style={[
+          styles.sheet,
+          { maxHeight: "90%" },
+          sheetPanStyle,
+        ]}
         entering={SlideInDown}
         exiting={SlideOutDown}
       >
-        <View style={styles.sheetHandle} />
+        <GestureDetector gesture={sheetPanGesture}>
+          <View
+            style={styles.sheetHandleDragZone}
+            accessibilityLabel="Ручка вікна"
+            accessibilityHint="Перетягніть вниз, щоб закрити"
+          >
+            <View style={styles.sheetHandle} />
+          </View>
+        </GestureDetector>
         <KeyboardAwareScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -401,7 +486,6 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
             placeholderTextColor={colors.muted}
             value={title}
             onChangeText={setTitle}
-            autoFocus
           />
 
           <Text style={styles.fieldLabel}>Категорія</Text>
@@ -686,5 +770,6 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
         </KeyboardAwareScrollView>
       </Animated.View>
     </Animated.View>
+    </GestureHandlerRootView>
   );
 };
