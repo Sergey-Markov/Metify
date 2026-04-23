@@ -18,14 +18,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomSheetModal } from "../UI";
 
-import { GoalCategoryFilterChip } from "./GoalCategoryFilterChip";
 import type {
   Goal,
   GoalCategory,
   GoalPriority,
   Milestone,
 } from "../types/goalsHabits";
+import { AutoGrowTextInput } from "../UI/AutoGrowTextInput";
 import { makeMilestoneId } from "../utils/goalsHabits";
+import { GoalCategoryFilterChip } from "./GoalCategoryFilterChip";
 
 type MilestoneFormRow = {
   rowKey: string;
@@ -166,11 +167,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginBottom: 8,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   msRemoveBtn: {
     width: 36,
-    height: 44,
+    minHeight: 44,
+    paddingTop: 13,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -328,10 +330,15 @@ export const AddGoalSheet = ({
   };
 
   const updateMsTitle = (i: number, val: string) => {
-    setMsRows((prev) => prev.map((m, idx) => (idx === i ? { ...m, title: val } : m)));
+    setMsRows((prev) =>
+      prev.map((m, idx) => (idx === i ? { ...m, title: val } : m)),
+    );
   };
   const addMsField = () =>
-    setMsRows((prev) => [...prev, emptyMilestoneRow(`n_${Date.now()}_${prev.length}`)]);
+    setMsRows((prev) => [
+      ...prev,
+      emptyMilestoneRow(`n_${Date.now()}_${prev.length}`),
+    ]);
   const removeMsField = (i: number) =>
     setMsRows((prev) => prev.filter((_, idx) => idx !== i));
 
@@ -341,12 +348,16 @@ export const AddGoalSheet = ({
       .filter((r) => r.title.trim())
       .map((r) => {
         if (r.milestoneId) {
-          const prev = initialGoal?.milestones.find((m) => m.id === r.milestoneId);
+          const prev = initialGoal?.milestones.find(
+            (m) => m.id === r.milestoneId,
+          );
           return {
             id: r.milestoneId,
             title: r.title.trim(),
             completed: r.completed,
-            completedAt: r.completed ? prev?.completedAt ?? new Date().toISOString() : undefined,
+            completedAt: r.completed
+              ? (prev?.completedAt ?? new Date().toISOString())
+              : undefined,
           };
         }
         return {
@@ -379,280 +390,276 @@ export const AddGoalSheet = ({
         extraKeyboardSpace={12}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-          <Text style={styles.sheetTitle}>
-            {initialGoal ? "Редагування цілі" : "Нова ціль"}
-          </Text>
+        <Text style={styles.sheetTitle}>
+          {initialGoal ? "Редагування цілі" : "Нова ціль"}
+        </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Чого хочете досягти?"
-            placeholderTextColor={colors.muted}
-            value={title}
-            onChangeText={setTitle}
-          />
+        <AutoGrowTextInput
+          style={styles.input}
+          placeholder="Чого хочете досягти?"
+          placeholderTextColor={colors.muted}
+          value={title}
+          onChangeText={setTitle}
+          accessibilityLabel="Назва цілі"
+        />
 
-          <Text style={styles.fieldLabel}>Категорія</Text>
-          <ScrollView
-            horizontal
-            nestedScrollEnabled
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 14 }}
-          >
-            {PICKER_CATEGORIES.map((c) => (
-              <GoalCategoryFilterChip
-                key={c.value}
-                value={c.value}
-                label={c.label}
-                active={category === c.value}
-                activeTone="category"
-                onPress={() => setCategory(c.value)}
-                style={{ marginRight: 8 }}
-              />
-            ))}
-          </ScrollView>
-
-          <Text style={styles.fieldLabel}>Пріоритет</Text>
-          <View style={styles.freqRow}>
-            {(["high", "medium", "low"] as GoalPriority[]).map((p) => (
-              <TouchableOpacity
-                key={p}
-                style={[
-                  styles.freqOpt,
-                  priority === p && {
-                    borderColor: PRI_COLORS[p],
-                    backgroundColor: PRI_COLORS[p] + "14",
-                  },
-                ]}
-                onPress={() => setPriority(p)}
-              >
-                <Text
-                  style={[
-                    styles.freqText,
-                    priority === p && { color: PRI_COLORS[p] },
-                  ]}
-                >
-                  {PRI_LABELS[p]}{" "}
-                  {p === "high"
-                    ? "Важливо"
-                    : p === "medium"
-                      ? "Середній"
-                      : "Низький"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.fieldLabel}>{"Дедлайн (необов'язково)"}</Text>
-          {Platform.OS === "web" ? (
-            <TextInput
-              style={[styles.input, { marginBottom: 20 }]}
-              placeholder="РРРР-ММ-ДД"
-              placeholderTextColor={colors.muted}
-              value={targetDate}
-              onChangeText={setTargetDate}
-              keyboardType="numbers-and-punctuation"
-              accessibilityLabel="Дедлайн, формат РРРР-ММ-ДД"
+        <Text style={styles.fieldLabel}>Категорія</Text>
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 14 }}
+        >
+          {PICKER_CATEGORIES.map((c) => (
+            <GoalCategoryFilterChip
+              key={c.value}
+              value={c.value}
+              label={c.label}
+              active={category === c.value}
+              activeTone="category"
+              onPress={() => setCategory(c.value)}
+              style={{ marginRight: 8 }}
             />
-          ) : Platform.OS === "android" ? (
-            <View style={{ marginBottom: 20 }}>
-              <TouchableOpacity
-                style={styles.dateTrigger}
-                onPress={() => setAndroidPickerOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Обрати дедлайн"
-                accessibilityHint="Відкриває календар для вибору дати"
-              >
-                <Text style={styles.dateTriggerText}>
-                  {targetDate.trim()
-                    ? formatDeadlineUk(targetDate)
-                    : "Оберіть дату"}
-                </Text>
-                <Text style={styles.dateTriggerHint}>
-                  {targetDate.trim()
-                    ? "Натисніть, щоб змінити"
-                    : "Необов'язково"}
-                </Text>
-              </TouchableOpacity>
-              {targetDate.trim() ? (
-                <Pressable
-                  style={styles.dateClear}
-                  onPress={() => setTargetDate("")}
-                  accessibilityRole="button"
-                  accessibilityLabel="Прибрати дедлайн"
-                >
-                  <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
-                </Pressable>
-              ) : null}
-              {androidPickerOpen ? (
-                <DateTimePicker
-                  value={pickerValue}
-                  mode="date"
-                  display="default"
-                  design="material"
-                  title="Дедлайн"
-                  onChange={onAndroidDateChange}
-                  minimumDate={deadlineMinDate}
-                  maximumDate={deadlineMaxDate}
-                  positiveButton={{
-                    label: "Готово",
-                    textColor: colors.accent,
-                  }}
-                  negativeButton={{
-                    label: "Скасувати",
-                    textColor: colors.muted,
-                  }}
-                />
-              ) : null}
-            </View>
-          ) : (
-            <View style={{ marginBottom: 20 }}>
-              <TouchableOpacity
-                style={styles.dateTrigger}
-                onPress={openIosDeadlinePicker}
-                accessibilityRole="button"
-                accessibilityLabel="Обрати дедлайн"
-                accessibilityHint="Відкриває вибір дати"
-              >
-                <Text style={styles.dateTriggerText}>
-                  {targetDate.trim()
-                    ? formatDeadlineUk(targetDate)
-                    : "Оберіть дату"}
-                </Text>
-                <Text style={styles.dateTriggerHint}>
-                  {targetDate.trim()
-                    ? "Натисніть, щоб змінити"
-                    : "Необов'язково"}
-                </Text>
-              </TouchableOpacity>
-              {targetDate.trim() ? (
-                <Pressable
-                  style={styles.dateClear}
-                  onPress={() => setTargetDate("")}
-                  accessibilityRole="button"
-                  accessibilityLabel="Прибрати дедлайн"
-                >
-                  <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
-                </Pressable>
-              ) : null}
-              <Modal
-                visible={iosPickerOpen}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setIosPickerOpen(false)}
-              >
-                <Pressable
-                  style={styles.iosModalBackdrop}
-                  onPress={() => setIosPickerOpen(false)}
-                >
-                  <Pressable
-                    style={[
-                      styles.iosModalCard,
-                      { paddingBottom: Math.max(insets.bottom, 16) },
-                    ]}
-                    onPress={(e) => e.stopPropagation()}
-                  >
-                    <View style={styles.iosModalToolbar}>
-                      <Pressable
-                        style={styles.iosModalBtn}
-                        onPress={() => setIosPickerOpen(false)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Скасувати вибір дати"
-                      >
-                        <Text style={styles.iosModalBtnText}>Скасувати</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.iosModalBtn}
-                        onPress={() => {
-                          setTargetDate("");
-                          setIosPickerOpen(false);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Без дедлайну"
-                      >
-                        <Text style={styles.iosModalBtnText}>Без дедлайну</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.iosModalBtn}
-                        onPress={() => {
-                          setTargetDate(toYmd(iosTempDate));
-                          setIosPickerOpen(false);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Підтвердити дедлайн"
-                      >
-                        <Text style={styles.iosModalBtnPrimaryText}>
-                          Готово
-                        </Text>
-                      </Pressable>
-                    </View>
-                    <View
-                      style={styles.datePickerWrap}
-                      accessibilityLabel="Коліщатко вибору дати дедлайну"
-                    >
-                      <DateTimePicker
-                        value={iosTempDate}
-                        mode="date"
-                        display="spinner"
-                        onChange={onIosSpinnerChange}
-                        minimumDate={deadlineMinDate}
-                        maximumDate={deadlineMaxDate}
-                        locale="uk_UA"
-                        themeVariant="dark"
-                        textColor={colors.text}
-                        accentColor={colors.accent}
-                      />
-                    </View>
-                  </Pressable>
-                </Pressable>
-              </Modal>
-            </View>
-          )}
-
-          <Text style={styles.fieldLabel}>Кроки до цілі</Text>
-          {msRows.map((row, i) => (
-            <View
-              key={row.rowKey}
-              style={styles.msBuilderRow}
-            >
-              <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                placeholder={`Крок ${i + 1}`}
-                placeholderTextColor={colors.muted}
-                value={row.title}
-                onChangeText={(v) => updateMsTitle(i, v)}
-              />
-              {msRows.length > 1 && (
-                <TouchableOpacity
-                  style={styles.msRemoveBtn}
-                  onPress={() => removeMsField(i)}
-                  accessibilityLabel={`Видалити крок ${i + 1}`}
-                >
-                  <Text style={styles.msRemoveBtnText}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           ))}
-          <TouchableOpacity
-            style={styles.msAddField}
-            onPress={addMsField}
-          >
-            <Text style={styles.msAddFieldText}>+ Додати крок</Text>
-          </TouchableOpacity>
+        </ScrollView>
 
-          <View style={[styles.sheetBtns, { marginTop: 24 }]}>
+        <Text style={styles.fieldLabel}>Пріоритет</Text>
+        <View style={styles.freqRow}>
+          {(["high", "medium", "low"] as GoalPriority[]).map((p) => (
             <TouchableOpacity
-              style={styles.btnCancel}
-              onPress={onClose}
+              key={p}
+              style={[
+                styles.freqOpt,
+                priority === p && {
+                  borderColor: PRI_COLORS[p],
+                  backgroundColor: PRI_COLORS[p] + "14",
+                },
+              ]}
+              onPress={() => setPriority(p)}
             >
-              <Text style={styles.btnCancelText}>Скасувати</Text>
+              <Text
+                style={[
+                  styles.freqText,
+                  priority === p && { color: PRI_COLORS[p] },
+                ]}
+              >
+                {PRI_LABELS[p]}{" "}
+                {p === "high"
+                  ? "Важливо"
+                  : p === "medium"
+                    ? "Середній"
+                    : "Низький"}
+              </Text>
             </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.fieldLabel}>{"Дедлайн (необов'язково)"}</Text>
+        {Platform.OS === "web" ? (
+          <TextInput
+            style={[styles.input, { marginBottom: 20 }]}
+            placeholder="РРРР-ММ-ДД"
+            placeholderTextColor={colors.muted}
+            value={targetDate}
+            onChangeText={setTargetDate}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel="Дедлайн, формат РРРР-ММ-ДД"
+          />
+        ) : Platform.OS === "android" ? (
+          <View style={{ marginBottom: 20 }}>
             <TouchableOpacity
-              style={styles.btnSave}
-              onPress={handleSave}
+              style={styles.dateTrigger}
+              onPress={() => setAndroidPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Обрати дедлайн"
+              accessibilityHint="Відкриває календар для вибору дати"
             >
-              <Text style={styles.btnSaveText}>Зберегти</Text>
+              <Text style={styles.dateTriggerText}>
+                {targetDate.trim()
+                  ? formatDeadlineUk(targetDate)
+                  : "Оберіть дату"}
+              </Text>
+              <Text style={styles.dateTriggerHint}>
+                {targetDate.trim() ? "Натисніть, щоб змінити" : "Необов'язково"}
+              </Text>
             </TouchableOpacity>
+            {targetDate.trim() ? (
+              <Pressable
+                style={styles.dateClear}
+                onPress={() => setTargetDate("")}
+                accessibilityRole="button"
+                accessibilityLabel="Прибрати дедлайн"
+              >
+                <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
+              </Pressable>
+            ) : null}
+            {androidPickerOpen ? (
+              <DateTimePicker
+                value={pickerValue}
+                mode="date"
+                display="default"
+                design="material"
+                title="Дедлайн"
+                onChange={onAndroidDateChange}
+                minimumDate={deadlineMinDate}
+                maximumDate={deadlineMaxDate}
+                positiveButton={{
+                  label: "Готово",
+                  textColor: colors.accent,
+                }}
+                negativeButton={{
+                  label: "Скасувати",
+                  textColor: colors.muted,
+                }}
+              />
+            ) : null}
           </View>
+        ) : (
+          <View style={{ marginBottom: 20 }}>
+            <TouchableOpacity
+              style={styles.dateTrigger}
+              onPress={openIosDeadlinePicker}
+              accessibilityRole="button"
+              accessibilityLabel="Обрати дедлайн"
+              accessibilityHint="Відкриває вибір дати"
+            >
+              <Text style={styles.dateTriggerText}>
+                {targetDate.trim()
+                  ? formatDeadlineUk(targetDate)
+                  : "Оберіть дату"}
+              </Text>
+              <Text style={styles.dateTriggerHint}>
+                {targetDate.trim() ? "Натисніть, щоб змінити" : "Необов'язково"}
+              </Text>
+            </TouchableOpacity>
+            {targetDate.trim() ? (
+              <Pressable
+                style={styles.dateClear}
+                onPress={() => setTargetDate("")}
+                accessibilityRole="button"
+                accessibilityLabel="Прибрати дедлайн"
+              >
+                <Text style={styles.dateClearText}>Прибрати дедлайн</Text>
+              </Pressable>
+            ) : null}
+            <Modal
+              visible={iosPickerOpen}
+              animationType="slide"
+              transparent
+              onRequestClose={() => setIosPickerOpen(false)}
+            >
+              <Pressable
+                style={styles.iosModalBackdrop}
+                onPress={() => setIosPickerOpen(false)}
+              >
+                <Pressable
+                  style={[
+                    styles.iosModalCard,
+                    { paddingBottom: Math.max(insets.bottom, 16) },
+                  ]}
+                  onPress={(e) => e.stopPropagation()}
+                >
+                  <View style={styles.iosModalToolbar}>
+                    <Pressable
+                      style={styles.iosModalBtn}
+                      onPress={() => setIosPickerOpen(false)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Скасувати вибір дати"
+                    >
+                      <Text style={styles.iosModalBtnText}>Скасувати</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.iosModalBtn}
+                      onPress={() => {
+                        setTargetDate("");
+                        setIosPickerOpen(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Без дедлайну"
+                    >
+                      <Text style={styles.iosModalBtnText}>Без дедлайну</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.iosModalBtn}
+                      onPress={() => {
+                        setTargetDate(toYmd(iosTempDate));
+                        setIosPickerOpen(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Підтвердити дедлайн"
+                    >
+                      <Text style={styles.iosModalBtnPrimaryText}>Готово</Text>
+                    </Pressable>
+                  </View>
+                  <View
+                    style={styles.datePickerWrap}
+                    accessibilityLabel="Коліщатко вибору дати дедлайну"
+                  >
+                    <DateTimePicker
+                      value={iosTempDate}
+                      mode="date"
+                      display="spinner"
+                      onChange={onIosSpinnerChange}
+                      minimumDate={deadlineMinDate}
+                      maximumDate={deadlineMaxDate}
+                      locale="uk_UA"
+                      themeVariant="dark"
+                      textColor={colors.text}
+                      accentColor={colors.accent}
+                    />
+                  </View>
+                </Pressable>
+              </Pressable>
+            </Modal>
+          </View>
+        )}
+
+        <Text style={styles.fieldLabel}>Кроки до цілі</Text>
+        {msRows.map((row, i) => (
+          <View
+            key={row.rowKey}
+            style={styles.msBuilderRow}
+          >
+            <AutoGrowTextInput
+              style={[styles.input, { flex: 1, marginBottom: 0 }]}
+              placeholder={`Крок ${i + 1}`}
+              placeholderTextColor={colors.muted}
+              value={row.title}
+              onChangeText={(v) => updateMsTitle(i, v)}
+              accessibilityLabel={`Текст кроку ${i + 1}`}
+            />
+            {msRows.length > 1 && (
+              <TouchableOpacity
+                style={styles.msRemoveBtn}
+                onPress={() => removeMsField(i)}
+                accessibilityLabel={`Видалити крок ${i + 1}`}
+              >
+                <Text style={styles.msRemoveBtnText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+        <TouchableOpacity
+          style={styles.msAddField}
+          onPress={addMsField}
+        >
+          <Text style={styles.msAddFieldText}>+ Додати крок</Text>
+        </TouchableOpacity>
+
+        <View style={[styles.sheetBtns, { marginTop: 24 }]}>
+          <TouchableOpacity
+            style={styles.btnCancel}
+            onPress={onClose}
+          >
+            <Text style={styles.btnCancelText}>Скасувати</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnSave}
+            onPress={handleSave}
+          >
+            <Text style={styles.btnSaveText}>Зберегти</Text>
+          </TouchableOpacity>
+        </View>
         <View style={{ height: 20 }} />
       </KeyboardAwareScrollView>
     </BottomSheetModal>

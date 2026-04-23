@@ -4,7 +4,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -12,6 +11,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomSheetModal, Btn, BtnIcon } from "../UI";
+import { AutoGrowTextInput } from "../UI/AutoGrowTextInput";
 import type {
   Goal,
   GoalCategory,
@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: colors.subtle,
   },
+  milestoneEditing: { alignItems: "flex-start" },
   msCheck: {
     width: 20,
     height: 20,
@@ -169,7 +170,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     gap: 6,
   },
-  addMsRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+  msRowActionsEdit: { alignItems: "flex-start", paddingTop: 4 },
+  addMsRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 10,
+  },
   addMsInput: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -355,7 +362,10 @@ export const GoalDetailSheet = ({
           {goal.milestones.map((m) => (
             <View
               key={m.id}
-              style={styles.milestone}
+              style={[
+                styles.milestone,
+                editingId === m.id && styles.milestoneEditing,
+              ]}
             >
               <TouchableOpacity
                 onPress={() => onToggleMilestone(m.id)}
@@ -378,8 +388,9 @@ export const GoalDetailSheet = ({
                 </View>
               </TouchableOpacity>
               {editingId === m.id ? (
-                <TextInput
+                <AutoGrowTextInput
                   style={styles.msTitleInput}
+                  minInputHeight={40}
                   value={editDraft}
                   onChangeText={setEditDraft}
                   onSubmitEditing={commitEdit}
@@ -397,7 +408,7 @@ export const GoalDetailSheet = ({
                 </Text>
               )}
               {canMutateMilestones && editingId === m.id ? (
-                <View style={styles.msRowActions}>
+                <View style={[styles.msRowActions, styles.msRowActionsEdit]}>
                   <BtnIcon
                     shape="square"
                     dimension={36}
@@ -444,8 +455,9 @@ export const GoalDetailSheet = ({
 
           {canMutateMilestones && (
             <View style={styles.addMsRow}>
-              <TextInput
+              <AutoGrowTextInput
                 style={styles.addMsInput}
+                minInputHeight={40}
                 placeholder="Додати крок..."
                 placeholderTextColor={colors.muted}
                 value={newMs}
