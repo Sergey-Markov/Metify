@@ -1,4 +1,5 @@
 import React from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import type { GoalCategory } from "../types/goalsHabits";
@@ -43,11 +44,16 @@ const styles = StyleSheet.create({
   textActive: { color: colors.accent },
 });
 
+export type GoalCategoryActiveTone = "accent" | "category";
+
 export type GoalCategoryFilterChipProps = {
   value: GoalCategory | "all";
   label: string;
   active: boolean;
   onPress: () => void;
+  /** `"accent"` — як на екрані фільтра; `"category"` — бордер/текст кольором категорії (форма додавання цілі). */
+  activeTone?: GoalCategoryActiveTone;
+  style?: StyleProp<ViewStyle>;
 };
 
 export const GoalCategoryFilterChip = ({
@@ -55,16 +61,47 @@ export const GoalCategoryFilterChip = ({
   label,
   active,
   onPress,
-}: GoalCategoryFilterChipProps) => (
-  <TouchableOpacity
-    style={[styles.chip, active && styles.chipActive]}
-    onPress={onPress}
-  >
-    {value !== "all" && (
-      <View
-        style={[styles.dot, { backgroundColor: CAT_COLORS[value] ?? colors.muted }]}
-      />
-    )}
-    <Text style={[styles.text, active && styles.textActive]}>{label}</Text>
-  </TouchableOpacity>
-);
+  activeTone = "accent",
+  style,
+}: GoalCategoryFilterChipProps) => {
+  const catTint =
+    active &&
+    activeTone === "category" &&
+    value !== "all" &&
+    (CAT_COLORS[value] ?? colors.muted);
+
+  const chipStyle = [
+    styles.chip,
+    catTint
+      ? {
+          borderColor: catTint,
+          backgroundColor: `${catTint}18`,
+        }
+      : active && styles.chipActive,
+    style,
+  ];
+
+  const labelStyle = [
+    styles.text,
+    catTint ? { color: catTint } : active && styles.textActive,
+  ];
+
+  return (
+    <TouchableOpacity
+      style={chipStyle}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      {value !== "all" && (
+        <View
+          style={[
+            styles.dot,
+            { backgroundColor: CAT_COLORS[value] ?? colors.muted },
+          ]}
+        />
+      )}
+      <Text style={labelStyle}>{label}</Text>
+    </TouchableOpacity>
+  );
+};

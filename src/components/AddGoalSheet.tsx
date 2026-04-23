@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomSheetModal } from "../UI";
 
+import { GoalCategoryFilterChip } from "./GoalCategoryFilterChip";
 import type {
   Goal,
   GoalCategory,
@@ -33,17 +34,6 @@ const colors = {
   muted: "#8a8a9a",
   subtle: "#3a3d4a",
   accent: "#c8a96e",
-};
-
-const CAT_COLORS: Record<GoalCategory, string> = {
-  health: "#4ecb8d",
-  career: "#5a9de0",
-  growth: "#c8a96e",
-  family: "#e05a9a",
-  travel: "#935ae0",
-  finance: "#f0a05a",
-  creative: "#a78bfa",
-  other: "#8a8a9a",
 };
 
 const PICKER_CATEGORIES: { value: GoalCategory; label: string }[] = [
@@ -138,19 +128,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: "500",
   },
-  catPillDot: { width: 5, height: 5, borderRadius: 3 },
-  catChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    marginRight: 8,
-  },
-  catChipText: { fontSize: 12, color: colors.muted },
   freqRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
   freqOpt: {
     flex: 1,
@@ -371,32 +348,15 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
             style={{ marginBottom: 14 }}
           >
             {PICKER_CATEGORIES.map((c) => (
-              <TouchableOpacity
+              <GoalCategoryFilterChip
                 key={c.value}
-                style={[
-                  styles.catChip,
-                  category === c.value && {
-                    borderColor: CAT_COLORS[c.value],
-                    backgroundColor: CAT_COLORS[c.value] + "18",
-                  },
-                ]}
+                value={c.value}
+                label={c.label}
+                active={category === c.value}
+                activeTone="category"
                 onPress={() => setCategory(c.value)}
-              >
-                <View
-                  style={[
-                    styles.catPillDot,
-                    { backgroundColor: CAT_COLORS[c.value] },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.catChipText,
-                    category === c.value && { color: CAT_COLORS[c.value] },
-                  ]}
-                >
-                  {c.label}
-                </Text>
-              </TouchableOpacity>
+                style={{ marginRight: 8 }}
+              />
             ))}
           </ScrollView>
 
