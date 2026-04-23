@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AddGoalSheet } from "../../src/components/AddGoalSheet";
-import { BtnIcon } from "../../src/components/BtnIcon";
+import { BtnIcon } from "../../src/UI/BtnIcon";
 import { EmptyGoals } from "../../src/components/EmptyGoals";
 import { GoalCard } from "../../src/components/GoalCard";
 import { GoalCategoryFilterChip } from "../../src/components/GoalCategoryFilterChip";
@@ -80,6 +80,8 @@ const GoalsScreen = () => {
     deleteGoal,
     addMilestone,
     toggleMilestone,
+    updateMilestoneTitle,
+    deleteMilestone,
   } = useGoalActions();
   const { avgProgress } = useGoalsSummary();
 
@@ -271,6 +273,10 @@ const GoalsScreen = () => {
           }}
           onToggleMilestone={(mid) => toggleMilestone(liveSelectedGoal.id, mid)}
           onAddMilestone={(title) => addMilestone(liveSelectedGoal.id, title)}
+          onUpdateMilestoneTitle={(mid, title) =>
+            updateMilestoneTitle(liveSelectedGoal.id, mid, title)
+          }
+          onDeleteMilestone={(mid) => deleteMilestone(liveSelectedGoal.id, mid)}
         />
       )}
 
