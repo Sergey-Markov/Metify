@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   StyleSheet,
   Text,
@@ -10,8 +11,13 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomSheetModal } from "../UI";
-import type { Goal, GoalCategory, GoalPriority } from "../types/goalsHabits";
+import { BottomSheetModal, Btn, BtnIcon } from "../UI";
+import type {
+  Goal,
+  GoalCategory,
+  GoalPriority,
+  Milestone,
+} from "../types/goalsHabits";
 import { daysUntilGoal } from "../utils/goalsHabits";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
@@ -143,8 +149,26 @@ const styles = StyleSheet.create({
   },
   msCheckDone: { backgroundColor: colors.accent, borderColor: colors.accent },
   msCheckMark: { fontSize: 10, color: colors.bg },
-  msTitle: { flex: 1, fontSize: 14, color: colors.text },
+  msTitle: { flex: 1, fontSize: 14, color: colors.text, minWidth: 0 },
   msTitleDone: { color: colors.subtle, textDecorationLine: "line-through" },
+  msTitleInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 14,
+    color: colors.text,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: colors.bg,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 8,
+  },
+  msRowActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: 6,
+  },
   addMsRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   addMsInput: {
     flex: 1,
@@ -157,36 +181,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
   },
-  addMsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "rgba(200,169,110,0.12)",
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addMsBtnText: { fontSize: 20, color: colors.accent, lineHeight: 22 },
   detailActions: { gap: 10, marginTop: 20 },
-  completeBig: {
-    backgroundColor: "rgba(78,203,141,0.12)",
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: "rgba(78,203,141,0.3)",
-  },
-  completeBigText: { fontSize: 14, color: colors.green, fontWeight: "500" },
-  closeSheetBtn: {
-    backgroundColor: "rgba(200,169,110,0.08)",
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.15)",
-  },
-  closeSheetBtnText: { fontSize: 14, color: colors.accent },
 });
 
 const KEYBOARD_AWARE_BOTTOM_OFFSET = 32;
@@ -197,6 +192,8 @@ export type GoalDetailSheetProps = {
   onComplete: () => void;
   onToggleMilestone: (id: string) => void;
   onAddMilestone: (title: string) => void;
+  onUpdateMilestoneTitle: (milestoneId: string, title: string) => void;
+  onDeleteMilestone: (milestoneId: string) => void;
 };
 
 export const GoalDetailSheet = ({
@@ -205,17 +202,69 @@ export const GoalDetailSheet = ({
   onComplete,
   onToggleMilestone,
   onAddMilestone,
+  onUpdateMilestoneTitle,
+  onDeleteMilestone,
 }: GoalDetailSheetProps) => {
   const insets = useSafeAreaInsets();
   const [newMs, setNewMs] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const catColor = CAT_COLORS[goal.category] ?? colors.muted;
   const daysLeft = daysUntilGoal(goal);
   const doneMiles = goal.milestones.filter((m) => m.completed).length;
+  const canMutateMilestones = goal.status === "active";
+  const milestoneEditLocked = editingId !== null;
+
+  useEffect(() => {
+    if (editingId && !goal.milestones.some((m) => m.id === editingId)) {
+      setEditingId(null);
+      setEditDraft("");
+    }
+  }, [goal.milestones, editingId]);
 
   const handleAddMs = () => {
     if (!newMs.trim()) return;
     onAddMilestone(newMs.trim());
     setNewMs("");
+  };
+
+  const startEdit = (m: Milestone) => {
+    setEditingId(m.id);
+    setEditDraft(m.title);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditDraft("");
+  };
+
+  const commitEdit = () => {
+    if (!editingId) return;
+    const trimmed = editDraft.trim();
+    const prev = goal.milestones.find((m) => m.id === editingId);
+    const id = editingId;
+    setEditingId(null);
+    setEditDraft("");
+    if (!prev || !trimmed || trimmed === prev.title) return;
+    onUpdateMilestoneTitle(id, trimmed);
+  };
+
+  const confirmDeleteMilestone = (m: Milestone) => {
+    const preview = m.title.length > 72 ? `${m.title.slice(0, 72)}…` : m.title;
+    Alert.alert("Видалити крок?", `«${preview}»`, [
+      { text: "Скасувати", style: "cancel" },
+      {
+        text: "Видалити",
+        style: "destructive",
+        onPress: () => {
+          if (editingId === m.id) {
+            setEditingId(null);
+            setEditDraft("");
+          }
+          onDeleteMilestone(m.id);
+        },
+      },
+    ]);
   };
 
   return (
@@ -227,87 +276,173 @@ export const GoalDetailSheet = ({
         extraKeyboardSpace={12}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-          <View style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}>
-            <View style={styles.detailTopRow}>
+        <View
+          style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}
+        >
+          <View style={styles.detailTopRow}>
+            <View
+              style={[
+                styles.catPill,
+                {
+                  backgroundColor: catColor + "20",
+                  borderColor: catColor + "40",
+                },
+              ]}
+            >
               <View
-                style={[
-                  styles.catPill,
-                  {
-                    backgroundColor: catColor + "20",
-                    borderColor: catColor + "40",
-                  },
-                ]}
-              >
-                <View style={[styles.catPillDot, { backgroundColor: catColor }]} />
-                <Text style={[styles.catPillText, { color: catColor }]}>
-                  {CATEGORY_LABELS[goal.category]}
-                </Text>
-              </View>
-              <Text style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}>
-                {PRI_LABELS[goal.priority]}{" "}
-                {goal.priority === "high"
-                  ? "Важливо"
-                  : goal.priority === "medium"
-                    ? "Середньо"
-                    : "Низьке"}
+                style={[styles.catPillDot, { backgroundColor: catColor }]}
+              />
+              <Text style={[styles.catPillText, { color: catColor }]}>
+                {CATEGORY_LABELS[goal.category]}
               </Text>
             </View>
-            <Text style={styles.detailTitle}>{goal.title}</Text>
+            <Text
+              style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}
+            >
+              {PRI_LABELS[goal.priority]}{" "}
+              {goal.priority === "high"
+                ? "Важливо"
+                : goal.priority === "medium"
+                  ? "Середньо"
+                  : "Низьке"}
+            </Text>
+          </View>
+          <Text style={styles.detailTitle}>{goal.title}</Text>
 
-            <View style={styles.detailStats}>
-              <View style={styles.detailStat}>
-                <Text style={[styles.detailStatVal, { color: catColor }]}>{goal.progress}%</Text>
-                <Text style={styles.detailStatLabel}>Прогрес</Text>
-              </View>
-              <View style={styles.detailDivider} />
-              <View style={styles.detailStat}>
-                <Text style={styles.detailStatVal}>
-                  {doneMiles}/{goal.milestones.length}
-                </Text>
-                <Text style={styles.detailStatLabel}>Кроків</Text>
-              </View>
-              <View style={styles.detailDivider} />
-              <View style={styles.detailStat}>
-                <Text
-                  style={[
-                    styles.detailStatVal,
-                    daysLeft === 0 && { color: colors.red },
-                  ]}
-                >
-                  {daysLeft === null ? "—" : daysLeft === 0 ? "!" : daysLeft}
-                </Text>
-                <Text style={styles.detailStatLabel}>
-                  {daysLeft === 0 ? "Прострочено" : "Днів"}
-                </Text>
-              </View>
+          <View style={styles.detailStats}>
+            <View style={styles.detailStat}>
+              <Text style={[styles.detailStatVal, { color: catColor }]}>
+                {goal.progress}%
+              </Text>
+              <Text style={styles.detailStatLabel}>Прогрес</Text>
             </View>
-
-            <View style={[styles.progressTrack, { marginTop: 8, height: 4 }]}>
-              <View
+            <View style={styles.detailDivider} />
+            <View style={styles.detailStat}>
+              <Text style={styles.detailStatVal}>
+                {doneMiles}/{goal.milestones.length}
+              </Text>
+              <Text style={styles.detailStatLabel}>Кроків</Text>
+            </View>
+            <View style={styles.detailDivider} />
+            <View style={styles.detailStat}>
+              <Text
                 style={[
-                  styles.progressFill,
-                  { width: `${goal.progress}%`, backgroundColor: catColor },
+                  styles.detailStatVal,
+                  daysLeft === 0 && { color: colors.red },
                 ]}
-              />
+              >
+                {daysLeft === null ? "—" : daysLeft === 0 ? "!" : daysLeft}
+              </Text>
+              <Text style={styles.detailStatLabel}>
+                {daysLeft === 0 ? "Прострочено" : "Днів"}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.milesSection}>
-            <Text style={styles.milesTitle}>Кроки до цілі</Text>
+          <View style={[styles.progressTrack, { marginTop: 8, height: 4 }]}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${goal.progress}%`, backgroundColor: catColor },
+              ]}
+            />
+          </View>
+        </View>
 
-            {goal.milestones.map((m) => (
+        <View style={styles.milesSection}>
+          <Text style={styles.milesTitle}>Кроки до цілі</Text>
+
+          {goal.milestones.map((m) => (
+            <View
+              key={m.id}
+              style={styles.milestone}
+            >
               <TouchableOpacity
-                key={m.id}
-                style={styles.milestone}
                 onPress={() => onToggleMilestone(m.id)}
+                disabled={!canMutateMilestones || milestoneEditLocked}
+                accessibilityRole="checkbox"
+                accessibilityState={{
+                  checked: m.completed,
+                  disabled: !canMutateMilestones || milestoneEditLocked,
+                }}
+                accessibilityLabel={
+                  m.completed
+                    ? "Крок виконано, зняти позначку"
+                    : "Позначити крок виконаним"
+                }
               >
-                <View style={[styles.msCheck, m.completed && styles.msCheckDone]}>
+                <View
+                  style={[styles.msCheck, m.completed && styles.msCheckDone]}
+                >
                   {m.completed && <Text style={styles.msCheckMark}>✓</Text>}
                 </View>
-                <Text style={[styles.msTitle, m.completed && styles.msTitleDone]}>{m.title}</Text>
               </TouchableOpacity>
-            ))}
+              {editingId === m.id ? (
+                <TextInput
+                  style={styles.msTitleInput}
+                  value={editDraft}
+                  onChangeText={setEditDraft}
+                  onSubmitEditing={commitEdit}
+                  returnKeyType="done"
+                  placeholder="Назва кроку"
+                  placeholderTextColor={colors.muted}
+                  accessibilityLabel="Редагування назви кроку"
+                />
+              ) : (
+                <Text
+                  style={[styles.msTitle, m.completed && styles.msTitleDone]}
+                  numberOfLines={4}
+                >
+                  {m.title}
+                </Text>
+              )}
+              {canMutateMilestones && editingId === m.id ? (
+                <View style={styles.msRowActions}>
+                  <BtnIcon
+                    shape="square"
+                    dimension={36}
+                    size={20}
+                    name="close-outline"
+                    color={colors.muted}
+                    onPress={cancelEdit}
+                    accessibilityLabel="Скасувати редагування кроку"
+                  />
+                  <BtnIcon
+                    shape="square"
+                    dimension={36}
+                    size={22}
+                    name="checkmark-outline"
+                    color={colors.green}
+                    onPress={commitEdit}
+                    accessibilityLabel="Зберегти крок"
+                  />
+                </View>
+              ) : canMutateMilestones ? (
+                <View style={styles.msRowActions}>
+                  <BtnIcon
+                    shape="square"
+                    dimension={36}
+                    size={20}
+                    name="create-outline"
+                    color={colors.accent}
+                    onPress={() => startEdit(m)}
+                    accessibilityLabel={`Змінити крок: ${m.title}`}
+                  />
+                  <BtnIcon
+                    shape="square"
+                    dimension={36}
+                    size={20}
+                    name="trash-outline"
+                    color={colors.red}
+                    onPress={() => confirmDeleteMilestone(m)}
+                    accessibilityLabel={`Видалити крок: ${m.title}`}
+                  />
+                </View>
+              ) : null}
+            </View>
+          ))}
 
+          {canMutateMilestones && (
             <View style={styles.addMsRow}>
               <TextInput
                 style={styles.addMsInput}
@@ -317,32 +452,40 @@ export const GoalDetailSheet = ({
                 onChangeText={setNewMs}
                 onSubmitEditing={handleAddMs}
                 returnKeyType="done"
+                editable={!milestoneEditLocked}
+                accessibilityLabel="Новий крок до цілі"
               />
-              <TouchableOpacity
-                style={styles.addMsBtn}
+              <BtnIcon
+                shape="square"
+                dimension={40}
+                size={24}
+                name="add"
                 onPress={handleAddMs}
-              >
-                <Text style={styles.addMsBtnText}>+</Text>
-              </TouchableOpacity>
+                disabled={milestoneEditLocked}
+                accessibilityLabel="Додати крок"
+              />
             </View>
-          </View>
+          )}
+        </View>
 
-          <View style={styles.detailActions}>
-            {goal.progress === 100 && goal.status !== "completed" && (
-              <TouchableOpacity
-                style={styles.completeBig}
-                onPress={onComplete}
-              >
-                <Text style={styles.completeBigText}>Позначити як виконану 🎉</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={styles.closeSheetBtn}
-              onPress={onClose}
+        <View style={styles.detailActions}>
+          {goal.progress === 100 && goal.status !== "completed" && (
+            <Btn
+              variant="success"
+              onPress={onComplete}
+              accessibilityLabel="Позначити ціль як виконану"
             >
-              <Text style={styles.closeSheetBtnText}>Закрити</Text>
-            </TouchableOpacity>
-          </View>
+              Позначити як виконану 🎉
+            </Btn>
+          )}
+          <Btn
+            variant="accent"
+            onPress={onClose}
+            accessibilityLabel="Закрити деталі цілі"
+          >
+            Готово
+          </Btn>
+        </View>
 
         <View style={{ height: 20 }} />
       </KeyboardAwareScrollView>
