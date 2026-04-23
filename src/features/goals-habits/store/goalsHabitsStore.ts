@@ -94,6 +94,38 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
           }),
         })),
 
+      updateMilestoneTitle: (goalId, milestoneId, title) =>
+        set((s) => {
+          const t = title.trim();
+          if (!t) return s;
+          return {
+            goals: s.goals.map((g) => {
+              if (g.id !== goalId) return g;
+              const milestones = g.milestones.map((m) =>
+                m.id === milestoneId ? { ...m, title: t } : m,
+              );
+              return {
+                ...g,
+                milestones,
+                progress: computeGoalProgress({ ...g, milestones }),
+              };
+            }),
+          };
+        }),
+
+      deleteMilestone: (goalId, milestoneId) =>
+        set((s) => ({
+          goals: s.goals.map((g) => {
+            if (g.id !== goalId) return g;
+            const milestones = g.milestones.filter((m) => m.id !== milestoneId);
+            return {
+              ...g,
+              milestones,
+              progress: computeGoalProgress({ ...g, milestones }),
+            };
+          }),
+        })),
+
       addHabit: (draft) =>
         set((s) => ({
           habits: [
