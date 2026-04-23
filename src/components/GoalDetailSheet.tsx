@@ -328,7 +328,7 @@ export const GoalDetailSheet = ({
           </View>
 
           <View style={styles.detailActions}>
-            {goal.progress === 100 && (
+            {goal.progress === 100 && goal.status !== "completed" && (
               <TouchableOpacity
                 style={styles.completeBig}
                 onPress={onComplete}

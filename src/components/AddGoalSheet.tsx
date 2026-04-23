@@ -25,6 +25,30 @@ import type {
   GoalPriority,
   Milestone,
 } from "../types/goalsHabits";
+import { makeMilestoneId } from "../utils/goalsHabits";
+
+type MilestoneFormRow = {
+  rowKey: string;
+  milestoneId?: string;
+  title: string;
+  completed: boolean;
+};
+
+function emptyMilestoneRow(key: string): MilestoneFormRow {
+  return { rowKey: key, title: "", completed: false };
+}
+
+function goalToMilestoneRows(goal: Goal): MilestoneFormRow[] {
+  if (!goal.milestones.length) {
+    return [emptyMilestoneRow(`n_${Date.now()}`)];
+  }
+  return goal.milestones.map((m) => ({
+    rowKey: m.id,
+    milestoneId: m.id,
+    title: m.title,
+    completed: m.completed,
+  }));
+}
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
@@ -236,17 +260,30 @@ export type AddGoalSheetProps = {
   onSave: (
     draft: Omit<Goal, "id" | "createdAt" | "status" | "progress">,
   ) => void;
+  initialGoal?: Goal | null;
 };
 
 const KEYBOARD_AWARE_BOTTOM_OFFSET = 56;
 
-export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
+export const AddGoalSheet = ({
+  onClose,
+  onSave,
+  initialGoal,
+}: AddGoalSheetProps) => {
   const insets = useSafeAreaInsets();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<GoalCategory>("growth");
-  const [priority, setPriority] = useState<GoalPriority>("medium");
-  const [targetDate, setTargetDate] = useState("");
-  const [milestones, setMilestones] = useState<string[]>([""]);
+  const [title, setTitle] = useState(() => initialGoal?.title ?? "");
+  const [category, setCategory] = useState<GoalCategory>(
+    () => initialGoal?.category ?? "growth",
+  );
+  const [priority, setPriority] = useState<GoalPriority>(
+    () => initialGoal?.priority ?? "medium",
+  );
+  const [targetDate, setTargetDate] = useState(
+    () => initialGoal?.targetDate ?? "",
+  );
+  const [msRows, setMsRows] = useState<MilestoneFormRow[]>(() =>
+    initialGoal ? goalToMilestoneRows(initialGoal) : [emptyMilestoneRow("m0")],
+  );
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   const [iosPickerOpen, setIosPickerOpen] = useState(false);
   const [iosTempDate, setIosTempDate] = useState(() => new Date());
@@ -290,22 +327,34 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
     setIosPickerOpen(true);
   };
 
-  const updateMs = (i: number, val: string) => {
-    setMilestones((prev) => prev.map((m, idx) => (idx === i ? val : m)));
+  const updateMsTitle = (i: number, val: string) => {
+    setMsRows((prev) => prev.map((m, idx) => (idx === i ? { ...m, title: val } : m)));
   };
-  const addMsField = () => setMilestones((prev) => [...prev, ""]);
+  const addMsField = () =>
+    setMsRows((prev) => [...prev, emptyMilestoneRow(`n_${Date.now()}_${prev.length}`)]);
   const removeMsField = (i: number) =>
-    setMilestones((prev) => prev.filter((_, idx) => idx !== i));
+    setMsRows((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSave = () => {
     if (!title.trim()) return;
-    const builtMs: Milestone[] = milestones
-      .filter((m) => m.trim())
-      .map((m, i) => ({
-        id: `m_${Date.now()}_${i}`,
-        title: m.trim(),
-        completed: false,
-      }));
+    const builtMs: Milestone[] = msRows
+      .filter((r) => r.title.trim())
+      .map((r) => {
+        if (r.milestoneId) {
+          const prev = initialGoal?.milestones.find((m) => m.id === r.milestoneId);
+          return {
+            id: r.milestoneId,
+            title: r.title.trim(),
+            completed: r.completed,
+            completedAt: r.completed ? prev?.completedAt ?? new Date().toISOString() : undefined,
+          };
+        }
+        return {
+          id: makeMilestoneId(),
+          title: r.title.trim(),
+          completed: false,
+        };
+      });
     const rawTd = targetDate.trim();
     const targetDateOut =
       rawTd === ""
@@ -330,7 +379,9 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
         extraKeyboardSpace={12}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-          <Text style={styles.sheetTitle}>Нова ціль</Text>
+          <Text style={styles.sheetTitle}>
+            {initialGoal ? "Редагування цілі" : "Нова ціль"}
+          </Text>
 
           <TextInput
             style={styles.input}
@@ -558,22 +609,23 @@ export const AddGoalSheet = ({ onClose, onSave }: AddGoalSheetProps) => {
           )}
 
           <Text style={styles.fieldLabel}>Кроки до цілі</Text>
-          {milestones.map((m, i) => (
+          {msRows.map((row, i) => (
             <View
-              key={i}
+              key={row.rowKey}
               style={styles.msBuilderRow}
             >
               <TextInput
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
                 placeholder={`Крок ${i + 1}`}
                 placeholderTextColor={colors.muted}
-                value={m}
-                onChangeText={(v) => updateMs(i, v)}
+                value={row.title}
+                onChangeText={(v) => updateMsTitle(i, v)}
               />
-              {milestones.length > 1 && (
+              {msRows.length > 1 && (
                 <TouchableOpacity
                   style={styles.msRemoveBtn}
                   onPress={() => removeMsField(i)}
+                  accessibilityLabel={`Видалити крок ${i + 1}`}
                 >
                   <Text style={styles.msRemoveBtnText}>✕</Text>
                 </TouchableOpacity>

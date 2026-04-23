@@ -110,6 +110,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   progressPct: { fontSize: 11, color: colors.muted },
+  cardActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: colors.subtle,
+  },
+  cardActionBtn: { paddingVertical: 4 },
+  cardActionEdit: { fontSize: 12, color: colors.accent, fontWeight: "500" },
+  cardActionMuted: { fontSize: 12, color: colors.muted, fontWeight: "500" },
+  cardActionDanger: { fontSize: 12, color: colors.red, fontWeight: "500" },
   completeBtn: {
     backgroundColor: "rgba(78,203,141,0.12)",
     borderRadius: 8,
@@ -125,7 +138,11 @@ export type GoalCardProps = {
   goal: Goal;
   onPress?: () => void;
   onComplete?: () => void;
+  /** Редагування — показується лише коли картка активна (`completed` не true) */
+  onEdit?: () => void;
   onDelete?: () => void;
+  /** Повернути виконану ціль у активні */
+  onReopen?: () => void;
   completed?: boolean;
 };
 
@@ -133,6 +150,9 @@ export const GoalCard = ({
   goal,
   onPress,
   onComplete,
+  onEdit,
+  onDelete,
+  onReopen,
   completed,
 }: GoalCardProps) => {
   const catColor = CAT_COLORS[goal.category] ?? colors.muted;
@@ -141,12 +161,8 @@ export const GoalCard = ({
   const doneMiles = goal.milestones.filter((m) => m.completed).length;
   const categoryLabel = CATEGORY_LABELS[goal.category];
 
-  return (
-    <TouchableOpacity
-      style={[styles.goalCard, completed && styles.goalCardDone]}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
+  const main = (
+    <>
       <View style={styles.goalCardTop}>
         <View
           style={[
@@ -207,11 +223,70 @@ export const GoalCard = ({
           <TouchableOpacity
             style={styles.completeBtn}
             onPress={onComplete}
+            accessibilityLabel="Позначити ціль виконаною"
           >
             <Text style={styles.completeBtnText}>Закрити ціль ✓</Text>
           </TouchableOpacity>
         )}
       </View>
-    </TouchableOpacity>
+    </>
+  );
+
+  const showActions = Boolean(
+    (onEdit && !completed) || onDelete || (completed && onReopen),
+  );
+
+  return (
+    <View style={styles.goalCard}>
+      <View style={completed ? styles.goalCardDone : undefined}>
+        {onPress ? (
+          <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityHint="Відкрити деталі цілі"
+          >
+            {main}
+          </TouchableOpacity>
+        ) : (
+          main
+        )}
+      </View>
+
+      {showActions && (
+        <View style={styles.cardActions}>
+          {completed && onReopen && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={onReopen}
+              accessibilityRole="button"
+              accessibilityLabel="Повернути ціль у активні"
+            >
+              <Text style={styles.cardActionMuted}>Повернути в активні</Text>
+            </TouchableOpacity>
+          )}
+          {onEdit && !completed && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={onEdit}
+              accessibilityRole="button"
+              accessibilityLabel="Редагувати ціль"
+            >
+              <Text style={styles.cardActionEdit}>Редагувати</Text>
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={onDelete}
+              accessibilityRole="button"
+              accessibilityLabel="Видалити ціль"
+            >
+              <Text style={styles.cardActionDanger}>Видалити</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
   );
 };

@@ -9,6 +9,7 @@ const colors = {
   muted: "#8a8a9a",
   subtle: "#3a3d4a",
   accent: "#c8a96e",
+  done: "#4ecb8d",
 };
 
 const CAT_COLORS: Partial<Record<GoalCategory, string>> = {
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
 export type GoalCategoryActiveTone = "accent" | "category";
 
 export type GoalCategoryFilterChipProps = {
-  value: GoalCategory | "all";
+  value: GoalCategory | "all" | "completed";
   label: string;
   active: boolean;
   onPress: () => void;
@@ -64,11 +65,15 @@ export const GoalCategoryFilterChip = ({
   activeTone = "accent",
   style,
 }: GoalCategoryFilterChipProps) => {
+  const tintColor =
+    value === "all"
+      ? undefined
+      : value === "completed"
+        ? colors.done
+        : CAT_COLORS[value] ?? colors.muted;
+
   const catTint =
-    active &&
-    activeTone === "category" &&
-    value !== "all" &&
-    (CAT_COLORS[value] ?? colors.muted);
+    active && activeTone === "category" && value !== "all" && tintColor;
 
   const chipStyle = [
     styles.chip,
@@ -97,7 +102,7 @@ export const GoalCategoryFilterChip = ({
         <View
           style={[
             styles.dot,
-            { backgroundColor: CAT_COLORS[value] ?? colors.muted },
+            { backgroundColor: tintColor ?? colors.muted },
           ]}
         />
       )}

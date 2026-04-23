@@ -9,6 +9,7 @@ import {
   makeHabitId,
   makeMilestoneId,
 } from '../../../utils/goalsHabits';
+import type { Goal } from '../../../types/goalsHabits';
 import type { GoalsHabitsState } from './types';
 
 export const useGoalsHabitsStore = create<GoalsHabitsState>()(
@@ -18,19 +19,19 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
       habits: [],
 
       addGoal: (draft) =>
-        set((s) => ({
-          goals: [
-            ...s.goals,
-            {
-              ...draft,
-              id: makeGoalId(),
-              createdAt: new Date().toISOString(),
-              status: 'active',
-              progress: 0,
-              milestones: [],
-            },
-          ],
-        })),
+        set((s) => {
+          const milestones = draft.milestones ?? [];
+          const created: Goal = {
+            ...draft,
+            id: makeGoalId(),
+            createdAt: new Date().toISOString(),
+            status: 'active',
+            milestones,
+            progress: 0,
+          };
+          created.progress = computeGoalProgress(created);
+          return { goals: [...s.goals, created] };
+        }),
 
       updateGoal: (id, patch) =>
         set((s) => ({

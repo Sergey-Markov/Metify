@@ -6,11 +6,12 @@
  *   - Priority-sorted goal cards with progress bars
  *   - Goal detail sheet (milestones, days remaining, edit)
  *   - Add-goal bottom sheet with milestone builder
- *   - Completed goals section (collapsible)
+ *   - Completed goals (той самий фільтр категорій + чіп «Виконані»)
  */
 
 import React, { useCallback, useMemo, useState } from "react";
 import {
+  Alert,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -22,9 +23,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AddGoalSheet } from "../../src/components/AddGoalSheet";
+import { BtnIcon } from "../../src/components/BtnIcon";
 import { EmptyGoals } from "../../src/components/EmptyGoals";
 import { GoalCard } from "../../src/components/GoalCard";
-import { BtnIcon } from "../../src/components/BtnIcon";
 import { GoalCategoryFilterChip } from "../../src/components/GoalCategoryFilterChip";
 import { GoalDetailSheet } from "../../src/components/GoalDetailSheet";
 import { GoalsOverallProgress } from "../../src/components/GoalsOverallProgress";
@@ -35,20 +36,30 @@ import type {
   GoalCategory,
   GoalPriority,
 } from "../../src/types/goalsHabits";
+import { computeGoalProgress } from "../../src/utils/goalsHabits";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const CATEGORIES: { value: GoalCategory | "all"; label: string }[] = [
+type GoalsFilter = GoalCategory | "all" | "completed";
+
+const CATEGORIES: { value: GoalsFilter; label: string }[] = [
   { value: "all", label: "Всі" },
-  { value: "health", label: "Здоров'я" },
+  { value: "completed", label: "Виконані" },
   { value: "career", label: "Кар'єра" },
   { value: "growth", label: "Розвиток" },
-  { value: "family", label: "Сім'я" },
+  { value: "health", label: "Здоров'я" },
   { value: "travel", label: "Подорожі" },
+  { value: "family", label: "Сім'я" },
   { value: "other", label: "Інше" },
 ];
 
 const PRI_RANK: Record<GoalPriority, number> = { high: 0, medium: 1, low: 2 };
+
+function sortCompletedDesc(a: Goal, b: Goal): number {
+  const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+  const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+  return tb - ta;
+}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -72,18 +83,52 @@ const GoalsScreen = () => {
   } = useGoalActions();
   const { avgProgress } = useGoalsSummary();
 
-  const [filterCat, setFilterCat] = useState<GoalCategory | "all">("all");
+  const [filterCat, setFilterCat] = useState<GoalsFilter>("all");
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showDone, setShowDone] = useState(false);
 
-  const filtered = useMemo(
-    () =>
-      [...activeGoals]
-        .filter((g) => filterCat === "all" || g.category === filterCat)
-        .sort((a, b) => PRI_RANK[a.priority] - PRI_RANK[b.priority]),
-    [activeGoals, filterCat],
+  const requestDeleteGoal = useCallback(
+    (id: string) => {
+      Alert.alert("Видалити ціль?", "Цю дію не можна скасувати.", [
+        { text: "Скасувати", style: "cancel" },
+        {
+          text: "Видалити",
+          style: "destructive",
+          onPress: () => deleteGoal(id),
+        },
+      ]);
+    },
+    [deleteGoal],
   );
+
+  const reopenGoal = useCallback(
+    (g: Goal) => {
+      updateGoal(g.id, {
+        status: "active",
+        completedAt: undefined,
+        progress: computeGoalProgress(g),
+      });
+    },
+    [updateGoal],
+  );
+
+  const filtered = useMemo(() => {
+    if (filterCat === "completed") return [];
+    return [...activeGoals]
+      .filter((g) => filterCat === "all" || g.category === filterCat)
+      .sort((a, b) => PRI_RANK[a.priority] - PRI_RANK[b.priority]);
+  }, [activeGoals, filterCat]);
+
+  const filteredCompleted = useMemo(() => {
+    if (filterCat === "completed") {
+      return [...completedGoals].sort(sortCompletedDesc);
+    }
+    return completedGoals
+      .filter((g) => filterCat === "all" || g.category === filterCat)
+      .sort(sortCompletedDesc);
+  }, [completedGoals, filterCat]);
 
   const toggleDone = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -97,9 +142,9 @@ const GoalsScreen = () => {
   const liveSelectedGoal = useMemo(
     () =>
       selectedGoal
-        ? (activeGoals.find((g) => g.id === selectedGoal.id) ?? selectedGoal)
+        ? (goals.find((g) => g.id === selectedGoal.id) ?? selectedGoal)
         : null,
-    [selectedGoal, activeGoals],
+    [selectedGoal, goals],
   );
 
   return (
@@ -120,7 +165,7 @@ const GoalsScreen = () => {
       </View>
 
       {/* Overall progress bar */}
-      {activeGoals.length > 0 && (
+      {activeGoals.length > 0 && filterCat !== "completed" && (
         <GoalsOverallProgress avgProgress={avgProgress} />
       )}
 
@@ -147,42 +192,66 @@ const GoalsScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Active goals */}
-        {filtered.length === 0 && (
+        {filterCat !== "completed" && filtered.length === 0 && (
           <EmptyGoals
             onAdd={() => setShowAdd(true)}
             filtered={filterCat !== "all"}
           />
         )}
 
-        {filtered.map((g) => (
-          <GoalCard
-            key={g.id}
-            goal={g}
-            onPress={() => openDetail(g)}
-            onComplete={() => completeGoal(g.id)}
-            onDelete={() => deleteGoal(g.id)}
-          />
-        ))}
+        {filterCat !== "completed" &&
+          filtered.map((g) => (
+            <GoalCard
+              key={g.id}
+              goal={g}
+              onPress={() => openDetail(g)}
+              onComplete={() => completeGoal(g.id)}
+              onEdit={() => setEditingGoal(g)}
+              onDelete={() => requestDeleteGoal(g.id)}
+            />
+          ))}
 
-        {/* Completed section */}
-        {completedGoals.length > 0 && (
+        {/* Тільки виконані (чіп «Виконані») */}
+        {filterCat === "completed" &&
+          (filteredCompleted.length === 0 ? (
+            <EmptyGoals
+              onAdd={() => setShowAdd(true)}
+              completedEmpty
+            />
+          ) : (
+            filteredCompleted.map((g) => (
+              <GoalCard
+                key={g.id}
+                goal={g}
+                completed
+                onPress={() => openDetail(g)}
+                onReopen={() => reopenGoal(g)}
+                onDelete={() => requestDeleteGoal(g.id)}
+              />
+            ))
+          ))}
+
+        {/* Виконані під активним списком (згортається) */}
+        {filterCat !== "completed" && filteredCompleted.length > 0 && (
           <View style={s.completedSection}>
             <TouchableOpacity
               style={s.completedToggle}
               onPress={toggleDone}
             >
               <Text style={s.completedToggleText}>
-                Виконані цілі ({completedGoals.length})
+                Виконані цілі ({filteredCompleted.length})
               </Text>
               <Text style={s.completedArrow}>{showDone ? "▲" : "▼"}</Text>
             </TouchableOpacity>
             {showDone &&
-              completedGoals.map((g) => (
+              filteredCompleted.map((g) => (
                 <GoalCard
                   key={g.id}
                   goal={g}
                   completed
-                  onDelete={() => deleteGoal(g.id)}
+                  onPress={() => openDetail(g)}
+                  onReopen={() => reopenGoal(g)}
+                  onDelete={() => requestDeleteGoal(g.id)}
                 />
               ))}
           </View>
@@ -206,12 +275,34 @@ const GoalsScreen = () => {
       )}
 
       {/* Add goal sheet */}
-      {showAdd && (
+      {(showAdd || editingGoal) && (
         <AddGoalSheet
-          onClose={() => setShowAdd(false)}
-          onSave={(draft) => {
-            addGoal(draft);
+          key={editingGoal ? `edit-${editingGoal.id}` : "add"}
+          initialGoal={editingGoal ?? undefined}
+          onClose={() => {
             setShowAdd(false);
+            setEditingGoal(null);
+          }}
+          onSave={(draft) => {
+            if (editingGoal) {
+              const next: Goal = {
+                ...editingGoal,
+                title: draft.title,
+                category: draft.category,
+                priority: draft.priority,
+                targetDate: draft.targetDate,
+                description: draft.description,
+                milestones: draft.milestones,
+              };
+              updateGoal(editingGoal.id, {
+                ...draft,
+                progress: computeGoalProgress(next),
+              });
+              setEditingGoal(null);
+            } else {
+              addGoal(draft);
+              setShowAdd(false);
+            }
           }}
         />
       )}

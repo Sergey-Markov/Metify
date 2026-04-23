@@ -38,10 +38,29 @@ const styles = StyleSheet.create({
 
 export type EmptyGoalsProps = {
   onAdd: () => void;
-  filtered: boolean;
+  /** Активні цілі: застосовано фільтр категорії */
+  filtered?: boolean;
+  /** Порожній список виконаних (чіп «Виконані») */
+  completedEmpty?: boolean;
 };
 
-export const EmptyGoals = ({ onAdd, filtered }: EmptyGoalsProps) => {
+export const EmptyGoals = ({
+  onAdd,
+  filtered = false,
+  completedEmpty = false,
+}: EmptyGoalsProps) => {
+  if (completedEmpty) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyIcon}>✓</Text>
+        <Text style={styles.emptyTitle}>Немає виконаних цілей</Text>
+        <Text style={styles.emptySub}>
+          Закривайте цілі — вони з'являться тут.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyIcon}>🎯</Text>

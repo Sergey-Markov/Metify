@@ -1,9 +1,6 @@
 import type { Goal, Habit } from '../../../types/goalsHabits';
 
-export type AddGoalDraft = Omit<
-  Goal,
-  'id' | 'createdAt' | 'status' | 'progress' | 'milestones'
->;
+export type AddGoalDraft = Omit<Goal, 'id' | 'createdAt' | 'status' | 'progress'>;
 
 export type AddHabitDraft = Omit<
   Habit,
