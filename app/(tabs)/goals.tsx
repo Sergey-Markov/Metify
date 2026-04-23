@@ -23,7 +23,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AddGoalSheet } from "../../src/components/AddGoalSheet";
-import { BtnIcon } from "../../src/UI/BtnIcon";
 import { EmptyGoals } from "../../src/components/EmptyGoals";
 import { GoalCard } from "../../src/components/GoalCard";
 import { GoalCategoryFilterChip } from "../../src/components/GoalCategoryFilterChip";
@@ -36,6 +35,7 @@ import type {
   GoalCategory,
   GoalPriority,
 } from "../../src/types/goalsHabits";
+import { BtnIcon } from "../../src/UI/BtnIcon";
 import { computeGoalProgress } from "../../src/utils/goalsHabits";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
