@@ -24,11 +24,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AddGoalSheet } from "../../src/components/AddGoalSheet";
 import { EmptyGoals } from "../../src/components/EmptyGoals";
 import { GoalCard } from "../../src/components/GoalCard";
+import { BtnIcon } from "../../src/components/BtnIcon";
+import { GoalCategoryFilterChip } from "../../src/components/GoalCategoryFilterChip";
 import { GoalDetailSheet } from "../../src/components/GoalDetailSheet";
 import { GoalsOverallProgress } from "../../src/components/GoalsOverallProgress";
 import { useGoalActions, useGoalsSummary } from "../../src/hooks/goalsHabits";
 import { useGoalsHabitsStore } from "../../src/store/useGoalsHabitsStore";
-import type { Goal, GoalCategory, GoalPriority } from "../../src/types/goalsHabits";
+import type {
+  Goal,
+  GoalCategory,
+  GoalPriority,
+} from "../../src/types/goalsHabits";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -42,21 +48,11 @@ const CATEGORIES: { value: GoalCategory | "all"; label: string }[] = [
   { value: "other", label: "Інше" },
 ];
 
-const CAT_COLORS: Record<string, string> = {
-  health: "#4ecb8d",
-  career: "#5a9de0",
-  growth: "#c8a96e",
-  family: "#e05a9a",
-  travel: "#935ae0",
-  finance: "#f0a05a",
-  other: "#8a8a9a",
-};
-
 const PRI_RANK: Record<GoalPriority, number> = { high: 0, medium: 1, low: 2 };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function GoalsScreen() {
+const GoalsScreen = () => {
   const goals = useGoalsHabitsStore((s) => s.goals);
   const activeGoals = useMemo(
     () => goals.filter((g) => g.status === "active"),
@@ -117,12 +113,10 @@ export default function GoalsScreen() {
           <Text style={s.headerSub}>Фокус на важливому</Text>
           <Text style={s.headerTitle}>Цілі</Text>
         </View>
-        <TouchableOpacity
-          style={s.addBtn}
+        <BtnIcon
           onPress={() => setShowAdd(true)}
-        >
-          <Text style={s.addBtnText}>+</Text>
-        </TouchableOpacity>
+          accessibilityLabel="Додати ціль"
+        />
       </View>
 
       {/* Overall progress bar */}
@@ -138,25 +132,13 @@ export default function GoalsScreen() {
         contentContainerStyle={s.filterContent}
       >
         {CATEGORIES.map((c) => (
-          <TouchableOpacity
+          <GoalCategoryFilterChip
             key={c.value}
-            style={[s.filterChip, filterCat === c.value && s.filterChipActive]}
+            value={c.value}
+            label={c.label}
+            active={filterCat === c.value}
             onPress={() => setFilterCat(c.value)}
-          >
-            {c.value !== "all" && (
-              <View
-                style={[s.filterDot, { backgroundColor: CAT_COLORS[c.value] }]}
-              />
-            )}
-            <Text
-              style={[
-                s.filterText,
-                filterCat === c.value && s.filterTextActive,
-              ]}
-            >
-              {c.label}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
 
@@ -235,13 +217,13 @@ export default function GoalsScreen() {
       )}
     </SafeAreaView>
   );
-}
+};
 
+export default GoalsScreen;
 // ─── Colors & Styles ─────────────────────────────────────────────────────────
 
 const colors = {
   bg: "#0a0b0f",
-  bg2: "#111318",
   accent: "#c8a96e",
   text: "#f0ede8",
   muted: "#8a8a9a",
@@ -268,17 +250,6 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   headerTitle: { fontFamily: SERIF, fontSize: 32, color: colors.text },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(200,169,110,0.12)",
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnText: { fontSize: 22, color: colors.accent, lineHeight: 26 },
 
   filterRow: { maxHeight: 30, marginVertical: 12 },
   filterContent: {
@@ -287,25 +258,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 8,
   },
-  filterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    backgroundColor: colors.bg2,
-  },
-  filterChipActive: {
-    borderColor: colors.accent,
-    backgroundColor: "rgba(200,169,110,0.08)",
-  },
-  filterDot: { width: 5, height: 5, borderRadius: 3 },
-  filterText: { fontSize: 12, color: colors.muted },
-  filterTextActive: { color: colors.accent },
 
   scroll: { flex: 1 },
 
