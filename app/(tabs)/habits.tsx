@@ -10,69 +10,21 @@
  */
 
 import React, { useCallback, useState } from "react";
-import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Platform, StyleSheet, Text, View } from "react-native";
 import {
   GestureHandlerRootView,
   ScrollView,
 } from "react-native-gesture-handler";
-import Animated, {
-  FadeIn,
-  FadeOut,
-  SlideInDown,
-  SlideOutDown,
-} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AddHabitSheet } from "../../src/components/HabitsScreen/AddHabitSheet";
 import { EmptyHabits } from "../../src/components/HabitsScreen/EmptyHabits";
 import { HabitCard } from "../../src/components/HabitsScreen/HabitCard";
 import { HabitDetailSheet } from "../../src/components/HabitsScreen/HabitDetailSheet";
 import { HabitsAgenda } from "../../src/components/HabitsScreen/HabitsAgenda";
 import { useHabitActions, useHabitsToday } from "../../src/hooks/goalsHabits";
-import type { AddHabitDraft } from "../../src/store/useGoalsHabitsStore";
-import type { Habit, HabitCategory } from "../../src/types/goalsHabits";
+import type { Habit } from "../../src/types/goalsHabits";
 import { BtnIcon } from "../../src/UI/BtnIcon";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const EMOJIS = [
-  "🧘",
-  "🏃",
-  "💧",
-  "📚",
-  "✍️",
-  "🎯",
-  "💪",
-  "🥗",
-  "🌙",
-  "🧠",
-  "🎨",
-  "🎵",
-  "💻",
-  "🌿",
-  "☀️",
-  "❤️",
-  "🛌",
-  "🧹",
-  "🚴",
-  "🧗",
-];
-
-const CAT_OPTIONS: { value: HabitCategory; label: string; color: string }[] = [
-  { value: "health", label: "Здоров'я", color: "#4ecb8d" },
-  { value: "mind", label: "Розум", color: "#5a9de0" },
-  { value: "work", label: "Робота", color: "#c8a96e" },
-  { value: "social", label: "Соціальне", color: "#e05a9a" },
-  { value: "other", label: "Інше", color: "#8a8a9a" },
-];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -228,136 +180,6 @@ function Section({
   );
 }
 
-// ─── AddHabitSheet ────────────────────────────────────────────────────────────
-
-function AddHabitSheet({
-  onClose,
-  onSave,
-}: {
-  onClose: () => void;
-  onSave: (draft: AddHabitDraft) => void;
-}) {
-  const [emoji, setEmoji] = useState("🎯");
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<HabitCategory>("health");
-  const [freq, setFreq] = useState<"daily" | "weekly">("daily");
-
-  const handleSave = () => {
-    if (!title.trim()) return;
-    onSave({
-      title: title.trim(),
-      emoji,
-      category,
-      frequency: freq,
-      targetDays: [],
-    });
-  };
-
-  return (
-    <Animated.View
-      style={s.overlay}
-      entering={FadeIn}
-      exiting={FadeOut}
-    >
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onClose}
-      />
-      <Animated.View
-        style={s.sheet}
-        entering={SlideInDown}
-        exiting={SlideOutDown}
-      >
-        <View style={s.sheetHandle} />
-        <Text style={s.sheetTitle}>Нова звичка</Text>
-
-        {/* Emoji picker */}
-        <View style={s.emojiGrid}>
-          {EMOJIS.map((e) => (
-            <TouchableOpacity
-              key={e}
-              style={[s.emojiOpt, emoji === e && s.emojiOptSel]}
-              onPress={() => setEmoji(e)}
-            >
-              <Text style={s.emojiOptText}>{e}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Title */}
-        <TextInput
-          style={s.input}
-          placeholder="Назва звички"
-          placeholderTextColor={colors.muted}
-          value={title}
-          onChangeText={setTitle}
-          autoFocus
-        />
-
-        {/* Category */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={s.catRow}
-        >
-          {CAT_OPTIONS.map((c) => (
-            <TouchableOpacity
-              key={c.value}
-              style={[
-                s.catChip,
-                category === c.value && {
-                  borderColor: c.color,
-                  backgroundColor: c.color + "18",
-                },
-              ]}
-              onPress={() => setCategory(c.value)}
-            >
-              <Text
-                style={[
-                  s.catChipText,
-                  category === c.value && { color: c.color },
-                ]}
-              >
-                {c.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Frequency */}
-        <View style={s.freqRow}>
-          {(["daily", "weekly"] as const).map((f) => (
-            <TouchableOpacity
-              key={f}
-              style={[s.freqOpt, freq === f && s.freqOptSel]}
-              onPress={() => setFreq(f)}
-            >
-              <Text style={[s.freqText, freq === f && s.freqTextSel]}>
-                {f === "daily" ? "Щодня" : "Щотижня"}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={s.sheetBtns}>
-          <TouchableOpacity
-            style={s.btnCancel}
-            onPress={onClose}
-          >
-            <Text style={s.btnCancelText}>Скасувати</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.btnSave}
-            onPress={handleSave}
-          >
-            <Text style={s.btnSaveText}>Додати</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
 // ─── Colors & Styles ─────────────────────────────────────────────────────────
 
 const colors = {
@@ -449,109 +271,4 @@ const s = StyleSheet.create({
     borderColor: colors.subtle,
   },
   sectionBadgeText: { fontSize: 11, color: colors.muted },
-
-  // Detail sheet
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end",
-    zIndex: 100,
-  },
-  sheet: {
-    backgroundColor: colors.bg2,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 3,
-    backgroundColor: colors.subtle,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  sheetTitle: {
-    fontFamily: SERIF,
-    fontSize: 22,
-    color: colors.text,
-    marginBottom: 4,
-  },
-
-  // Add sheet
-  emojiGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginVertical: 16,
-  },
-  emojiOpt: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emojiOptSel: {
-    borderColor: colors.accent,
-    backgroundColor: "rgba(200,169,110,0.12)",
-  },
-  emojiOptText: { fontSize: 22 },
-  input: {
-    backgroundColor: colors.bg,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    color: colors.text,
-    fontSize: 15,
-    marginBottom: 14,
-  },
-  catRow: { marginBottom: 14 },
-  catChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    marginRight: 8,
-  },
-  catChipText: { fontSize: 12, color: colors.muted },
-  freqRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
-  freqOpt: {
-    flex: 1,
-    paddingVertical: 11,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    alignItems: "center",
-  },
-  freqOptSel: {
-    borderColor: colors.accent,
-    backgroundColor: "rgba(200,169,110,0.08)",
-  },
-  freqText: { fontSize: 13, color: colors.muted },
-  freqTextSel: { color: colors.accent },
-  sheetBtns: { flexDirection: "row", gap: 10 },
-  btnCancel: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    alignItems: "center",
-  },
-  btnCancelText: { fontSize: 14, color: colors.muted },
-  btnSave: {
-    flex: 2,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-  },
-  btnSaveText: { fontSize: 14, fontWeight: "500", color: colors.bg },
 });
