@@ -10,8 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { Agenda, LocaleConfig } from "react-native-calendars";
 import type { AgendaEntry, AgendaSchedule } from "react-native-calendars";
+import { Agenda, LocaleConfig } from "react-native-calendars";
 import type { ReservationListProps } from "react-native-calendars/src/agenda/reservation-list";
 
 import type { Habit } from "../../types/goalsHabits";
@@ -71,15 +71,14 @@ const colors = {
   green: "#4ecb8d",
 };
 
-const AGENDA_MIN_HEIGHT = 380;
+const AGENDA_MIN_HEIGHT = 250;
+const ROW_HEIGHT = 100;
 
 type HabitAgendaRow = AgendaEntry & {
   doneCount: number;
   totalDue: number;
   rate: number;
 };
-
-const ROW_HEIGHT = 100;
 
 function isoFromDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -255,7 +254,11 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
         <View
           style={[
             styles.staticListHost,
-            { backgroundColor: agendaTheme?.backgroundColor as string | undefined },
+            {
+              backgroundColor: agendaTheme?.backgroundColor as
+                | string
+                | undefined,
+            },
           ]}
         >
           {red?.() ?? <ActivityIndicator color={colors.accent} />}
@@ -269,7 +272,9 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
           styles.staticListHost,
           {
             backgroundColor:
-              (agendaTheme?.reservationsBackgroundColor as string | undefined) ||
+              (agendaTheme?.reservationsBackgroundColor as
+                | string
+                | undefined) ||
               (agendaTheme?.backgroundColor as string | undefined),
           },
         ]}

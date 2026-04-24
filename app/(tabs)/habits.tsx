@@ -14,7 +14,6 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,22 +21,19 @@ import {
   View,
 } from "react-native";
 import {
-  Gesture,
-  GestureDetector,
   GestureHandlerRootView,
+  ScrollView,
 } from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
   FadeOut,
   SlideInDown,
   SlideOutDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { EmptyHabits } from "../../src/components/HabitsScreen/EmptyHabits";
+import { HabitCard } from "../../src/components/HabitsScreen/HabitCard";
 import { HabitsAgenda } from "../../src/components/HabitsScreen/HabitsAgenda";
 import {
   useHabitActions,
@@ -46,6 +42,7 @@ import {
 } from "../../src/hooks/goalsHabits";
 import type { AddHabitDraft } from "../../src/store/useGoalsHabitsStore";
 import type { Habit, HabitCategory } from "../../src/types/goalsHabits";
+import { BtnIcon } from "../../src/UI/BtnIcon";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -85,7 +82,7 @@ const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HabitsScreen() {
-  const { habits, pending, done, due, completionRate } = useHabitsToday();
+  const { habits, pending, done } = useHabitsToday();
   const { checkHabit, addHabit, deleteHabit } = useHabitActions();
 
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
@@ -112,27 +109,17 @@ export default function HabitsScreen() {
             </Text>
             <Text style={s.headerTitle}>Звички</Text>
           </View>
-          <TouchableOpacity
-            style={s.addBtn}
+          <BtnIcon
             onPress={() => setShowAddSheet(true)}
-          >
-            <Text style={s.addBtnText}>+</Text>
-          </TouchableOpacity>
+            accessibilityLabel="Додати звичку"
+          />
         </View>
-
         <ScrollView
           style={s.scroll}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
         >
           <HabitsAgenda habits={habits} />
-
-          {/* Progress ring + summary */}
-          <DailySummary
-            done={done.length}
-            total={due.length}
-            rate={completionRate}
-          />
 
           {/* Habit sections */}
           {pending.length > 0 && (
@@ -141,7 +128,7 @@ export default function HabitsScreen() {
               count={pending.length}
             >
               {pending.map((h) => (
-                <SwipeableHabitRow
+                <HabitCard
                   key={h.id}
                   habit={h}
                   onCheck={() => checkHabit(h.id)}
@@ -168,7 +155,7 @@ export default function HabitsScreen() {
               muted
             >
               {done.map((h) => (
-                <SwipeableHabitRow
+                <HabitCard
                   key={h.id}
                   habit={h}
                   onCheck={() => checkHabit(h.id)}
@@ -181,7 +168,7 @@ export default function HabitsScreen() {
           )}
 
           {habits.length === 0 && (
-            <EmptyState onAdd={() => setShowAddSheet(true)} />
+            <EmptyHabits onAdd={() => setShowAddSheet(true)} />
           )}
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -209,50 +196,6 @@ export default function HabitsScreen() {
   );
 }
 
-// ─── DailySummary ─────────────────────────────────────────────────────────────
-
-function DailySummary({
-  done,
-  total,
-  rate,
-}: {
-  done: number;
-  total: number;
-  rate: number;
-}) {
-  const circumference = 2 * Math.PI * 28;
-  const offset = circumference * (1 - rate / 100);
-
-  return (
-    <View style={s.summaryCard}>
-      <View style={s.ringContainer}>
-        {/* SVG ring via View trick — use a canvas-like approach */}
-        <View style={s.ringOuter}>
-          <View style={s.ringInner}>
-            <Text style={s.ringPct}>{rate}%</Text>
-          </View>
-          {/* Filled arc simulation with border */}
-          <View
-            style={[
-              s.ringArc,
-              { borderColor: colors.accent, opacity: rate > 0 ? 1 : 0.1 },
-            ]}
-          />
-        </View>
-      </View>
-      <View style={s.summaryText}>
-        <Text style={s.summaryBig}>
-          {done} <Text style={s.summaryOf}>з {total}</Text>
-        </Text>
-        <Text style={s.summaryLabel}>звичок виконано</Text>
-        {rate === 100 && total > 0 && (
-          <Text style={s.summaryBonus}>Відмінно! Всі виконано 🎉</Text>
-        )}
-      </View>
-    </View>
-  );
-}
-
 // ─── Section ──────────────────────────────────────────────────────────────────
 
 function Section({
@@ -277,101 +220,6 @@ function Section({
         </View>
       </View>
       {children}
-    </View>
-  );
-}
-
-// ─── SwipeableHabitRow ────────────────────────────────────────────────────────
-
-function SwipeableHabitRow({
-  habit,
-  onCheck,
-  onPress,
-  onDelete,
-  checked = false,
-}: {
-  habit: Habit;
-  onCheck: () => void;
-  onPress: () => void;
-  onDelete: () => void;
-  checked?: boolean;
-}) {
-  const translateX = useSharedValue(0);
-  const THRESHOLD = -80;
-
-  const gesture = Gesture.Pan()
-    .activeOffsetX([-10, 10])
-    .onUpdate((e) => {
-      translateX.value = Math.min(0, e.translationX);
-    })
-    .onEnd(() => {
-      if (translateX.value < THRESHOLD) {
-        translateX.value = withTiming(THRESHOLD);
-      } else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const rowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const catColor =
-    CAT_OPTIONS.find((c) => c.value === habit.category)?.color ?? colors.muted;
-
-  return (
-    <View style={s.swipeWrapper}>
-      {/* Delete button revealed on swipe */}
-      <TouchableOpacity
-        style={s.deleteAction}
-        onPress={onDelete}
-      >
-        <Text style={s.deleteActionText}>🗑</Text>
-      </TouchableOpacity>
-
-      <GestureDetector gesture={gesture}>
-        <Animated.View
-          style={[s.habitRow, checked && s.habitRowDone, rowStyle]}
-        >
-          <View style={[s.habitCatBar, { backgroundColor: catColor }]} />
-
-          <TouchableOpacity
-            style={s.habitEmoji}
-            onPress={onPress}
-          >
-            <Text style={s.habitEmojiText}>{habit.emoji}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={s.habitInfo}
-            onPress={onPress}
-            activeOpacity={0.7}
-          >
-            <Text style={[s.habitName, checked && s.habitNameDone]}>
-              {habit.title}
-            </Text>
-            <View style={s.habitMeta}>
-              <Text style={s.habitMetaText}>
-                {CAT_OPTIONS.find((c) => c.value === habit.category)?.label}
-              </Text>
-              {habit.streak > 1 && (
-                <View style={s.streakPill}>
-                  <Text style={s.streakText}>🔥 {habit.streak}</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[s.checkBtn, checked && s.checkBtnDone]}
-            onPress={onCheck}
-          >
-            <Text style={[s.checkMark, checked && s.checkMarkDone]}>
-              {checked ? "✓" : ""}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </GestureDetector>
     </View>
   );
 }
@@ -614,26 +462,6 @@ function AddHabitSheet({
   );
 }
 
-// ─── EmptyState ───────────────────────────────────────────────────────────────
-
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <View style={s.empty}>
-      <Text style={s.emptyIcon}>🌱</Text>
-      <Text style={s.emptyTitle}>Немає звичок</Text>
-      <Text style={s.emptySub}>
-        Додайте першу звичку і починайте будувати кращу версію себе
-      </Text>
-      <TouchableOpacity
-        style={s.emptyBtn}
-        onPress={onAdd}
-      >
-        <Text style={s.emptyBtnText}>Додати звичку</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
 // ─── Colors & Styles ─────────────────────────────────────────────────────────
 
 const colors = {
@@ -667,17 +495,6 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   headerTitle: { fontFamily: SERIF, fontSize: 32, color: colors.text },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(200,169,110,0.12)",
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnText: { fontSize: 22, color: colors.accent, lineHeight: 26 },
   scroll: { flex: 1 },
 
   // Summary
@@ -736,70 +553,6 @@ const s = StyleSheet.create({
     borderColor: colors.subtle,
   },
   sectionBadgeText: { fontSize: 11, color: colors.muted },
-
-  // Habit row
-  swipeWrapper: { marginBottom: 8, position: "relative" },
-  deleteAction: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 72,
-    backgroundColor: "#3a1010",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteActionText: { fontSize: 20 },
-  habitRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.bg2,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    overflow: "hidden",
-    minHeight: 64,
-  },
-  habitRowDone: { opacity: 0.6 },
-  habitCatBar: { width: 3, alignSelf: "stretch" },
-  habitEmoji: { width: 48, alignItems: "center" },
-  habitEmojiText: { fontSize: 24 },
-  habitInfo: { flex: 1, paddingVertical: 12, paddingRight: 8 },
-  habitName: { fontSize: 14, color: colors.text, marginBottom: 3 },
-  habitNameDone: { color: colors.muted, textDecorationLine: "line-through" },
-  habitMeta: { flexDirection: "row", alignItems: "center", gap: 8 },
-  habitMetaText: { fontSize: 11, color: colors.muted },
-  streakPill: {
-    backgroundColor: "rgba(200,169,110,0.1)",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  streakText: { fontSize: 10, color: colors.accent },
-  checkBtn: {
-    width: 52,
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkBtnDone: {},
-  checkMark: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-    textAlign: "center",
-    lineHeight: 25,
-    fontSize: 12,
-    color: "transparent",
-  },
-  checkMarkDone: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-    color: colors.bg,
-  },
 
   // Detail sheet
   overlay: {
@@ -964,30 +717,4 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   btnSaveText: { fontSize: 14, fontWeight: "500", color: colors.bg },
-
-  // Empty
-  empty: { alignItems: "center", padding: 48 },
-  emptyIcon: { fontSize: 48, marginBottom: 16, opacity: 0.4 },
-  emptyTitle: {
-    fontFamily: SERIF,
-    fontSize: 22,
-    color: colors.text,
-    marginBottom: 8,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: colors.muted,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  emptyBtn: {
-    backgroundColor: "rgba(200,169,110,0.12)",
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.3)",
-  },
-  emptyBtnText: { fontSize: 14, color: colors.accent },
 });
