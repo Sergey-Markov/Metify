@@ -59,12 +59,16 @@ const styles = StyleSheet.create({
   habitCard: {
     backgroundColor: colors.bg2,
     borderRadius: 16,
-    padding: 16,
+    padding: 10,
     borderWidth: 0.5,
     borderColor: colors.subtle,
     overflow: "hidden",
   },
-  habitCardDone: { opacity: 0.5 },
+  /** Без `opacity` на контейнері — інакше крізь картку видно кнопку свайп-видалення. */
+  habitCardDone: {
+    backgroundColor: "#0b0c11",
+    borderColor: "rgba(78, 203, 141, 0.45)",
+  },
   cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -122,7 +126,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   habitTitleDone: { color: colors.muted, textDecorationLine: "line-through" },
-  habitMeta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  habitMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
   habitMetaText: { fontSize: 11, color: colors.muted },
   streakPill: {
     backgroundColor: "rgba(200,169,110,0.1)",
@@ -187,11 +196,7 @@ export const HabitCard = ({
 
       <GestureDetector gesture={gesture}>
         <Animated.View
-          style={[
-            styles.habitCard,
-            checked && styles.habitCardDone,
-            rowStyle,
-          ]}
+          style={[styles.habitCard, checked && styles.habitCardDone, rowStyle]}
         >
           <View style={styles.cardTop}>
             <View
@@ -203,7 +208,9 @@ export const HabitCard = ({
                 },
               ]}
             >
-              <View style={[styles.catPillDot, { backgroundColor: catColor }]} />
+              <View
+                style={[styles.catPillDot, { backgroundColor: catColor }]}
+              />
               <Text
                 style={[styles.catPillText, { color: catColor }]}
                 numberOfLines={1}
@@ -212,15 +219,15 @@ export const HabitCard = ({
               </Text>
             </View>
             <View style={styles.topActions}>
-              {checked && (
-                <Text style={styles.doneTag}>✓ Виконано</Text>
-              )}
+              {checked && <Text style={styles.doneTag}>✓ Виконано</Text>}
               <TouchableOpacity
                 style={[styles.checkBtn, checked && styles.checkBtnDone]}
                 onPress={onCheck}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  checked ? "Скасувати виконання за сьогодні" : "Позначити виконаною"
+                  checked
+                    ? "Скасувати виконання за сьогодні"
+                    : "Позначити виконаною"
                 }
               >
                 <Text

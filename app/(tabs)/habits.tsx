@@ -91,6 +91,24 @@ export default function HabitsScreen() {
   const openDetail = useCallback((h: Habit) => setSelectedHabit(h), []);
   const closeDetail = useCallback(() => setSelectedHabit(null), []);
 
+  const requestDeleteHabit = useCallback(
+    (h: Habit) => {
+      Alert.alert(
+        "Видалити звичку?",
+        `«${h.title}» буде видалено безповоротно. Цю дію не можна скасувати.`,
+        [
+          { text: "Скасувати", style: "cancel" },
+          {
+            text: "Видалити",
+            style: "destructive",
+            onPress: () => deleteHabit(h.id),
+          },
+        ],
+      );
+    },
+    [deleteHabit],
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
@@ -133,16 +151,7 @@ export default function HabitsScreen() {
                   habit={h}
                   onCheck={() => checkHabit(h.id)}
                   onPress={() => openDetail(h)}
-                  onDelete={() => {
-                    Alert.alert("Видалити звичку?", h.title, [
-                      { text: "Скасувати", style: "cancel" },
-                      {
-                        text: "Видалити",
-                        style: "destructive",
-                        onPress: () => deleteHabit(h.id),
-                      },
-                    ]);
-                  }}
+                  onDelete={() => requestDeleteHabit(h)}
                 />
               ))}
             </Section>
@@ -160,7 +169,7 @@ export default function HabitsScreen() {
                   habit={h}
                   onCheck={() => checkHabit(h.id)}
                   onPress={() => openDetail(h)}
-                  onDelete={() => deleteHabit(h.id)}
+                  onDelete={() => requestDeleteHabit(h)}
                   checked
                 />
               ))}
