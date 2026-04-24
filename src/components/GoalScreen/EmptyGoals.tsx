@@ -1,5 +1,11 @@
 import React from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
@@ -55,7 +61,7 @@ export const EmptyGoals = ({
         <Text style={styles.emptyIcon}>✓</Text>
         <Text style={styles.emptyTitle}>Немає виконаних цілей</Text>
         <Text style={styles.emptySub}>
-          Закривайте цілі — вони з'являться тут.
+          {`Закривайте цілі — вони з'являться тут.`}
         </Text>
       </View>
     );
@@ -64,7 +70,9 @@ export const EmptyGoals = ({
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyIcon}>🎯</Text>
-      <Text style={styles.emptyTitle}>{filtered ? "Немає цілей" : "Ваші цілі"}</Text>
+      <Text style={styles.emptyTitle}>
+        {filtered ? "Немає цілей" : "Ваші цілі"}
+      </Text>
       <Text style={styles.emptySub}>
         {filtered
           ? "У цій категорії немає активних цілей"

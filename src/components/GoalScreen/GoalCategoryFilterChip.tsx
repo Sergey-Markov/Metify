@@ -2,7 +2,7 @@ import React from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import type { GoalCategory } from "../types/goalsHabits";
+import type { GoalCategory } from "../../types/goalsHabits";
 
 const colors = {
   bg2: "#111318",
@@ -70,7 +70,7 @@ export const GoalCategoryFilterChip = ({
       ? undefined
       : value === "completed"
         ? colors.done
-        : CAT_COLORS[value] ?? colors.muted;
+        : (CAT_COLORS[value] ?? colors.muted);
 
   const catTint =
     active && activeTone === "category" && value !== "all" && tintColor;
@@ -100,10 +100,7 @@ export const GoalCategoryFilterChip = ({
     >
       {value !== "all" && (
         <View
-          style={[
-            styles.dot,
-            { backgroundColor: tintColor ?? colors.muted },
-          ]}
+          style={[styles.dot, { backgroundColor: tintColor ?? colors.muted }]}
         />
       )}
       <Text style={labelStyle}>{label}</Text>

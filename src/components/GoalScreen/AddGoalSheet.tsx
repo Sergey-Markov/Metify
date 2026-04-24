@@ -16,16 +16,16 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomSheetModal } from "../UI";
+import { BottomSheetModal } from "../../UI";
 
 import type {
   Goal,
   GoalCategory,
   GoalPriority,
   Milestone,
-} from "../types/goalsHabits";
-import { AutoGrowTextInput } from "../UI/AutoGrowTextInput";
-import { makeMilestoneId } from "../utils/goalsHabits";
+} from "../../types/goalsHabits";
+import { AutoGrowTextInput } from "../../UI/AutoGrowTextInput";
+import { makeMilestoneId } from "../../utils/goalsHabits";
 import { GoalCategoryFilterChip } from "./GoalCategoryFilterChip";
 
 type MilestoneFormRow = {

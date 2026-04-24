@@ -1,8 +1,8 @@
 import React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
-import type { Goal, GoalCategory, GoalPriority } from "../types/goalsHabits";
-import { daysUntilGoal } from "../utils/goalsHabits";
+import type { Goal, GoalCategory, GoalPriority } from "../../types/goalsHabits";
+import { daysUntilGoal } from "../../utils/goalsHabits";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
@@ -114,9 +114,7 @@ export const GoalDetailBanner = ({ goal }: GoalDetailBannerProps) => {
   const doneMiles = goal.milestones.filter((m) => m.completed).length;
 
   return (
-    <View
-      style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}
-    >
+    <View style={[styles.detailBanner, { backgroundColor: catColor + "14" }]}>
       <View style={styles.detailTopRow}>
         <View
           style={[
@@ -127,16 +125,12 @@ export const GoalDetailBanner = ({ goal }: GoalDetailBannerProps) => {
             },
           ]}
         >
-          <View
-            style={[styles.catPillDot, { backgroundColor: catColor }]}
-          />
+          <View style={[styles.catPillDot, { backgroundColor: catColor }]} />
           <Text style={[styles.catPillText, { color: catColor }]}>
             {CATEGORY_LABELS[goal.category]}
           </Text>
         </View>
-        <Text
-          style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}
-        >
+        <Text style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}>
           {PRI_LABELS[goal.priority]}{" "}
           {goal.priority === "high"
             ? "Важливо"

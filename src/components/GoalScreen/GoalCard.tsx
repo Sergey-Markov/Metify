@@ -1,8 +1,14 @@
 import React from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import type { Goal, GoalCategory, GoalPriority } from "../types/goalsHabits";
-import { daysUntilGoal } from "../utils/goalsHabits";
+import type { Goal, GoalCategory, GoalPriority } from "../../types/goalsHabits";
+import { daysUntilGoal } from "../../utils/goalsHabits";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
@@ -177,7 +183,9 @@ export const GoalCard = ({
         </View>
         <View style={styles.goalCardActions}>
           {!completed && (
-            <Text style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}>
+            <Text
+              style={[styles.priIcon, { color: PRI_COLORS[goal.priority] }]}
+            >
               {PRI_LABELS[goal.priority]}
             </Text>
           )}

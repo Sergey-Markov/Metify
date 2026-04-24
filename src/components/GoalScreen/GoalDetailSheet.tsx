@@ -3,9 +3,9 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomSheetModal, Btn, BtnIcon } from "../UI";
-import { AutoGrowTextInput } from "../UI/AutoGrowTextInput";
-import type { Goal, Milestone } from "../types/goalsHabits";
+import { BottomSheetModal, Btn, BtnIcon } from "../../UI";
+import { AutoGrowTextInput } from "../../UI/AutoGrowTextInput";
+import type { Goal, Milestone } from "../../types/goalsHabits";
 
 import { GoalDetailBanner } from "./GoalDetailBanner";
 

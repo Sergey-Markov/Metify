@@ -22,12 +22,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AddGoalSheet } from "../../src/components/AddGoalSheet";
-import { EmptyGoals } from "../../src/components/EmptyGoals";
-import { GoalCard } from "../../src/components/GoalCard";
-import { GoalCategoryFilterChip } from "../../src/components/GoalCategoryFilterChip";
-import { GoalDetailSheet } from "../../src/components/GoalDetailSheet";
-import { GoalsOverallProgress } from "../../src/components/GoalsOverallProgress";
+import { AddGoalSheet } from "../../src/components/GoalScreen/AddGoalSheet";
+import { EmptyGoals } from "../../src/components/GoalScreen/EmptyGoals";
+import { GoalCard } from "../../src/components/GoalScreen/GoalCard";
+import { GoalCategoryFilterChip } from "../../src/components/GoalScreen/GoalCategoryFilterChip";
+import { GoalDetailSheet } from "../../src/components/GoalScreen/GoalDetailSheet";
+import { GoalsOverallProgress } from "../../src/components/GoalScreen/GoalsOverallProgress";
 import { useGoalActions, useGoalsSummary } from "../../src/hooks/goalsHabits";
 import { useGoalsHabitsStore } from "../../src/store/useGoalsHabitsStore";
 import type {
