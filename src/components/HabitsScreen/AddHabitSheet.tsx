@@ -2,12 +2,13 @@
  * Bottom sheet: створення нової звички.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Keyboard,
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { AddHabitDraft } from "../../store/useGoalsHabitsStore";
 import type { HabitCategory } from "../../types/goalsHabits";
-import { BottomSheetModal, Btn } from "../../UI";
+import { BottomSheetModal, Btn, BtnIcon } from "../../UI";
 import { AutoGrowTextInput } from "../../UI/AutoGrowTextInput";
 
 const EMOJIS = [
@@ -63,6 +64,9 @@ const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
 
 const KEYBOARD_AWARE_BOTTOM_OFFSET = 32;
 
+/** Обмеження довжини рядка емодзі (кодові одиниці UTF-16). */
+const CUSTOM_EMOJI_MAX_LEN = 32;
+
 const styles = StyleSheet.create({
   sheetTitle: {
     fontFamily: SERIF,
@@ -89,7 +93,39 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     backgroundColor: "rgba(200,169,110,0.12)",
   },
-  emojiOptText: { fontSize: 22 },
+  emojiOptText: { fontSize: 22, maxWidth: 40, textAlign: "center" },
+  customEmojiRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: -4,
+    marginBottom: 14,
+  },
+  customEmojiInput: {
+    flex: 1,
+    minHeight: 44,
+    backgroundColor: colors.bg,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: colors.text,
+    fontSize: 22,
+  },
+  customEmojiApply: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: colors.accent,
+    backgroundColor: "rgba(200,169,110,0.08)",
+  },
+  customEmojiApplyText: {
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: "500",
+  },
   titleInput: {
     backgroundColor: colors.bg,
     borderWidth: 0.5,
@@ -137,9 +173,35 @@ export type AddHabitSheetProps = {
 export const AddHabitSheet = ({ onClose, onSave }: AddHabitSheetProps) => {
   const insets = useSafeAreaInsets();
   const [emoji, setEmoji] = useState("🎯");
+  const [customEmojiOpen, setCustomEmojiOpen] = useState(false);
+  const [customEmojiDraft, setCustomEmojiDraft] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<HabitCategory>("health");
   const [freq, setFreq] = useState<"daily" | "weekly">("daily");
+
+  const isCustomEmoji = !EMOJIS.includes(emoji);
+
+  const pickerEmojis = useMemo(
+    () =>
+      emoji && !EMOJIS.includes(emoji) ? [emoji, ...EMOJIS] : EMOJIS,
+    [emoji],
+  );
+
+  const applyCustomEmoji = useCallback(() => {
+    const next = customEmojiDraft.trim().slice(0, CUSTOM_EMOJI_MAX_LEN);
+    if (!next) return;
+    setEmoji(next);
+    setCustomEmojiOpen(false);
+    Keyboard.dismiss();
+  }, [customEmojiDraft]);
+
+  const toggleCustomEmojiRow = useCallback(() => {
+    setCustomEmojiOpen((open) => {
+      if (open) return false;
+      setCustomEmojiDraft(isCustomEmoji ? emoji : "");
+      return true;
+    });
+  }, [emoji, isCustomEmoji]);
 
   const handleSave = useCallback(() => {
     const trimmed = title.trim();
@@ -171,19 +233,71 @@ export const AddHabitSheet = ({ onClose, onSave }: AddHabitSheetProps) => {
         <Text style={styles.sheetTitle}>Нова звичка</Text>
 
         <View style={styles.emojiGrid}>
-          {EMOJIS.map((e) => (
+          {pickerEmojis.map((e) => (
             <TouchableOpacity
               key={e}
               style={[styles.emojiOpt, emoji === e && styles.emojiOptSel]}
-              onPress={() => setEmoji(e)}
+              onPress={() => {
+                setEmoji(e);
+                setCustomEmojiOpen(false);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Обрати емодзі ${e}`}
               accessibilityState={{ selected: emoji === e }}
             >
-              <Text style={styles.emojiOptText}>{e}</Text>
+              <Text
+                style={styles.emojiOptText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.35}
+              >
+                {e}
+              </Text>
             </TouchableOpacity>
           ))}
+          <BtnIcon
+            shape="square"
+            dimension={44}
+            size={22}
+            name="add"
+            color={customEmojiOpen ? colors.accent : colors.muted}
+            onPress={toggleCustomEmojiRow}
+            accessibilityLabel={
+              customEmojiOpen
+                ? "Закрити поле власного емодзі"
+                : "Власне емодзі. Відкриває поле для введення емодзі, якого немає в списку"
+            }
+          />
         </View>
+
+        {customEmojiOpen ? (
+          <View style={styles.customEmojiRow}>
+            <TextInput
+              style={styles.customEmojiInput}
+              value={customEmojiDraft}
+              onChangeText={(t) =>
+                setCustomEmojiDraft(t.slice(0, CUSTOM_EMOJI_MAX_LEN))
+              }
+              placeholder="Вставте емодзі"
+              placeholderTextColor={colors.muted}
+              multiline={false}
+              returnKeyType="done"
+              blurOnSubmit
+              onSubmitEditing={applyCustomEmoji}
+              autoFocus
+              accessibilityLabel="Поле власного емодзі"
+              accessibilityHint="Введіть або вставте символ з клавіатури, потім натисніть Готово"
+            />
+            <TouchableOpacity
+              style={styles.customEmojiApply}
+              onPress={applyCustomEmoji}
+              accessibilityRole="button"
+              accessibilityLabel="Застосувати власне емодзі"
+            >
+              <Text style={styles.customEmojiApplyText}>Готово</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <AutoGrowTextInput
           style={styles.titleInput}
