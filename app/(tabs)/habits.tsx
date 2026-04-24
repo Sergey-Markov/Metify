@@ -34,12 +34,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyHabits } from "../../src/components/HabitsScreen/EmptyHabits";
 import { HabitCard } from "../../src/components/HabitsScreen/HabitCard";
+import { HabitDetailSheet } from "../../src/components/HabitsScreen/HabitDetailSheet";
 import { HabitsAgenda } from "../../src/components/HabitsScreen/HabitsAgenda";
-import {
-  useHabitActions,
-  useHabitStats,
-  useHabitsToday,
-} from "../../src/hooks/goalsHabits";
+import { useHabitActions, useHabitsToday } from "../../src/hooks/goalsHabits";
 import type { AddHabitDraft } from "../../src/store/useGoalsHabitsStore";
 import type { Habit, HabitCategory } from "../../src/types/goalsHabits";
 import { BtnIcon } from "../../src/UI/BtnIcon";
@@ -76,8 +73,6 @@ const CAT_OPTIONS: { value: HabitCategory; label: string; color: string }[] = [
   { value: "social", label: "Соціальне", color: "#e05a9a" },
   { value: "other", label: "Інше", color: "#8a8a9a" },
 ];
-
-const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -229,114 +224,6 @@ function Section({
         </View>
       </View>
       {children}
-    </View>
-  );
-}
-
-// ─── HabitDetailSheet ─────────────────────────────────────────────────────────
-
-function HabitDetailSheet({
-  habit,
-  onClose,
-}: {
-  habit: Habit;
-  onClose: () => void;
-}) {
-  const stats = useHabitStats(habit);
-
-  return (
-    <Animated.View
-      style={s.overlay}
-      entering={FadeIn}
-      exiting={FadeOut}
-    >
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onClose}
-      />
-      <Animated.View
-        style={s.sheet}
-        entering={SlideInDown}
-        exiting={SlideOutDown}
-      >
-        {/* Handle */}
-        <View style={s.sheetHandle} />
-
-        <View style={s.sheetHeader}>
-          <Text style={s.sheetEmoji}>{habit.emoji}</Text>
-          <View>
-            <Text style={s.sheetTitle}>{habit.title}</Text>
-            <Text style={s.sheetSub}>
-              {CAT_OPTIONS.find((c) => c.value === habit.category)?.label}
-            </Text>
-          </View>
-        </View>
-
-        {/* Stats grid */}
-        <View style={s.statsGrid}>
-          <StatTile
-            label="Поточна серія"
-            value={`${stats.currentStreak}д`}
-            accent
-          />
-          <StatTile
-            label="Рекорд"
-            value={`${stats.longestStreak}д`}
-          />
-          <StatTile
-            label="Виконань"
-            value={String(stats.totalCompletions)}
-          />
-          <StatTile
-            label="За 30 днів"
-            value={`${Math.round(stats.completionRate * 100)}%`}
-          />
-        </View>
-
-        {/* Mini bar chart — last 7 days */}
-        <Text style={s.chartLabel}>Останні 7 днів</Text>
-        <View style={s.barChart}>
-          {stats.weeklyData.map((v, i) => (
-            <View
-              key={i}
-              style={s.barCol}
-            >
-              <View style={s.barTrack}>
-                <View style={[s.barFill, { height: `${v * 100}%` }]} />
-              </View>
-              <Text style={s.barDay}>{DAY_LABELS[i]}</Text>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={s.closeSheetBtn}
-          onPress={onClose}
-        >
-          <Text style={s.closeSheetBtnText}>Закрити</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
-// ─── StatTile ─────────────────────────────────────────────────────────────────
-
-function StatTile({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <View style={s.statTile}>
-      <Text style={[s.statValue, accent && { color: colors.accent }]}>
-        {value}
-      </Text>
-      <Text style={s.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -585,71 +472,12 @@ const s = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
   },
-  sheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    marginBottom: 24,
-  },
-  sheetEmoji: { fontSize: 36 },
   sheetTitle: {
     fontFamily: SERIF,
     fontSize: 22,
     color: colors.text,
     marginBottom: 4,
   },
-  sheetSub: { fontSize: 12, color: colors.muted },
-  statsGrid: { flexDirection: "row", gap: 10, marginBottom: 24 },
-  statTile: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: colors.subtle,
-  },
-  statValue: {
-    fontFamily: SERIF,
-    fontSize: 20,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 9,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: colors.muted,
-    textAlign: "center",
-  },
-  chartLabel: {
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    color: colors.muted,
-    marginBottom: 10,
-  },
-  barChart: { flexDirection: "row", gap: 6, height: 80, marginBottom: 24 },
-  barCol: { flex: 1, alignItems: "center", gap: 6 },
-  barTrack: {
-    flex: 1,
-    width: "100%",
-    backgroundColor: colors.bg,
-    borderRadius: 4,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  barFill: { backgroundColor: colors.accent, borderRadius: 4, width: "100%" },
-  barDay: { fontSize: 9, color: colors.muted },
-  closeSheetBtn: {
-    backgroundColor: "rgba(200,169,110,0.1)",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: "rgba(200,169,110,0.2)",
-  },
-  closeSheetBtnText: { fontSize: 14, color: colors.accent },
 
   // Add sheet
   emojiGrid: {
