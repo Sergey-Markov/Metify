@@ -2,15 +2,54 @@ import type { Habit, HabitStats, Goal } from '../types/goalsHabits';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
+export function habitLocalDateKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Monday-based week (same as Habits agenda `firstDay={1}`). */
+function startOfWeekMonday(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = x.getDay();
+  const offset = day === 0 ? -6 : 1 - day;
+  x.setDate(x.getDate() + offset);
+  return x;
+}
+
+export function habitWeekRangeKeys(ref: Date): { start: string; end: string } {
+  const start = startOfWeekMonday(ref);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return { start: habitLocalDateKey(start), end: habitLocalDateKey(end) };
+}
+
+export function habitHasCompletionInRange(
+  habit: Habit,
+  start: string,
+  end: string,
+): boolean {
+  return habit.completions.some((c) => c >= start && c <= end);
+}
+
 // ─── Habit Utils ──────────────────────────────────────────────────────────────
 
 export function isHabitDueToday(habit: Habit): boolean {
   if (habit.frequency === 'daily') return true;
+  if (!habit.targetDays.length) {
+    return true;
+  }
   const dow = new Date().getDay();
   return habit.targetDays.includes(dow);
 }
 
 export function isHabitCompletedToday(habit: Habit): boolean {
+  if (habit.frequency === 'daily') {
+    return habit.completions.includes(TODAY());
+  }
+  if (!habit.targetDays.length) {
+    const { start, end } = habitWeekRangeKeys(new Date());
+    return habitHasCompletionInRange(habit, start, end);
+  }
   return habit.completions.includes(TODAY());
 }
 

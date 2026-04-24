@@ -3,18 +3,18 @@
  */
 
 import React, { useCallback, useMemo } from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import type { AgendaEntry, AgendaSchedule } from "react-native-calendars";
 import { Agenda, LocaleConfig } from "react-native-calendars";
 import type { ReservationListProps } from "react-native-calendars/src/agenda/reservation-list";
 
 import type { Habit } from "../../types/goalsHabits";
+import {
+  habitHasCompletionInRange,
+  habitLocalDateKey,
+  habitWeekRangeKeys,
+} from "../../utils/goalsHabits";
+import { AgendaProgress } from "./AgendaProgress";
 
 LocaleConfig.locales.uk = {
   monthNames: [
@@ -59,8 +59,6 @@ LocaleConfig.locales.uk = {
 };
 LocaleConfig.defaultLocale = "uk";
 
-const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
-
 const colors = {
   bg: "#0a0b0f",
   bg2: "#111318",
@@ -71,18 +69,18 @@ const colors = {
   green: "#4ecb8d",
 };
 
-const AGENDA_MIN_HEIGHT = 250;
-const ROW_HEIGHT = 100;
+const AGENDA_MIN_HEIGHT = 248;
+const ROW_HEIGHT = 118;
 
 type HabitAgendaRow = AgendaEntry & {
-  doneCount: number;
-  totalDue: number;
-  rate: number;
+  day: string;
+  dailyDone: number;
+  dailyDue: number;
+  dailyRate: number;
+  weeklyDone: number;
+  weeklyDue: number;
+  weeklyRate: number;
 };
-
-function isoFromDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 /** Same as library `toMarkingFormat` (local days, no UTC shift). */
 function dateKeyFromAgendaDay(d: {
@@ -105,32 +103,56 @@ function buildItemsAndMarkings(
   const items: AgendaSchedule = {};
   const markedDates: Record<string, { marked?: boolean; dotColor?: string }> =
     {};
-  const totalDue = habits.filter((h) => h.frequency === "daily").length;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-    const iso = isoFromDate(d);
-    const doneCount = habits.filter((h) => h.completions.includes(iso)).length;
-    const rate = totalDue > 0 ? doneCount / totalDue : 0;
+    const dayKey = habitLocalDateKey(d);
+    const dow = d.getDay();
+
+    const dailyHabits = habits.filter((h) => h.frequency === "daily");
+    const dailyDue = dailyHabits.length;
+    const dailyDone = dailyHabits.filter((h) =>
+      h.completions.includes(dayKey),
+    ).length;
+    const dailyRate = dailyDue > 0 ? dailyDone / dailyDue : 0;
+
+    const { start: wStart, end: wEnd } = habitWeekRangeKeys(d);
+    let weeklyDue = 0;
+    let weeklyDone = 0;
+    for (const h of habits) {
+      if (h.frequency !== "weekly") continue;
+      if (!h.targetDays.length) {
+        weeklyDue++;
+        if (habitHasCompletionInRange(h, wStart, wEnd)) weeklyDone++;
+      } else if (h.targetDays.includes(dow)) {
+        weeklyDue++;
+        if (h.completions.includes(dayKey)) weeklyDone++;
+      }
+    }
+    const weeklyRate = weeklyDue > 0 ? weeklyDone / weeklyDue : 0;
+
     const row: HabitAgendaRow = {
-      name: `habits-${iso}`,
+      name: `habits-${dayKey}`,
       height: ROW_HEIGHT,
-      day: iso,
-      doneCount,
-      totalDue,
-      rate,
+      day: dayKey,
+      dailyDone,
+      dailyDue,
+      dailyRate,
+      weeklyDone,
+      weeklyDue,
+      weeklyRate,
     };
-    items[iso] = [row];
+    items[dayKey] = [row];
 
     const dayOnly = new Date(d);
     dayOnly.setHours(0, 0, 0, 0);
     const isPast = dayOnly < today;
-    if (totalDue > 0 && isPast) {
-      if (rate >= 1) {
-        markedDates[iso] = { marked: true, dotColor: colors.green };
-      } else if (rate > 0) {
-        markedDates[iso] = { marked: true, dotColor: colors.accent };
+    if (dailyDue > 0 && isPast) {
+      if (dailyRate >= 1) {
+        markedDates[dayKey] = { marked: true, dotColor: colors.green };
+      } else if (dailyRate > 0) {
+        markedDates[dayKey] = { marked: true, dotColor: colors.accent };
       }
     }
   }
@@ -151,7 +173,7 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
     return buildItemsAndMarkings(habits, start, end);
   }, [habits]);
 
-  const selected = useMemo(() => isoFromDate(new Date()), []);
+  const selected = useMemo(() => habitLocalDateKey(new Date()), []);
 
   const calendarTheme = useMemo(
     () => ({
@@ -178,44 +200,23 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
     const b = r2 as HabitAgendaRow;
     return (
       a.day !== b.day ||
-      a.doneCount !== b.doneCount ||
-      a.totalDue !== b.totalDue
+      a.dailyDone !== b.dailyDone ||
+      a.dailyDue !== b.dailyDue ||
+      a.weeklyDone !== b.weeklyDone ||
+      a.weeklyDue !== b.weeklyDue
     );
   }, []);
 
   const renderItem = useCallback((item: AgendaEntry, firstItem: boolean) => {
     const row = item as HabitAgendaRow;
     return (
-      <View
-        style={[styles.agendaRow, !firstItem && styles.agendaRowFollow]}
-        accessibilityRole="summary"
-        accessibilityLabel={
-          row.totalDue > 0
-            ? `За цей день виконано ${row.doneCount} з ${row.totalDue} щоденних звичок`
-            : "Немає щоденних звичок для цього дня"
-        }
-      >
-        {row.totalDue > 0 ? (
-          <>
-            <Text style={styles.agendaRowTitle}>Прогрес за день</Text>
-            <Text style={styles.agendaRowStat}>
-              <Text style={styles.agendaRowNum}>{row.doneCount}</Text>
-              <Text style={styles.agendaRowOf}> / {row.totalDue}</Text>
-            </Text>
-            <Text style={styles.agendaRowHint}>
-              {row.rate >= 1
-                ? "Усі щоденні звички закриті"
-                : row.rate > 0
-                  ? "Є ще що доробити"
-                  : "Почніть з першої звички"}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.agendaRowMuted}>
-            Додайте щоденні звички, щоб бачити прогрес по днях
-          </Text>
-        )}
-      </View>
+      <AgendaProgress
+        firstItem={firstItem}
+        dailyDone={row.dailyDone}
+        dailyDue={row.dailyDue}
+        weeklyDone={row.weeklyDone}
+        weeklyDue={row.weeklyDue}
+      />
     );
   }, []);
 
@@ -322,46 +323,5 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minHeight: ROW_HEIGHT + 48,
     justifyContent: "flex-start",
-  },
-  agendaRow: {
-    marginHorizontal: 24,
-    marginTop: 8,
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: colors.bg2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.subtle,
-  },
-  agendaRowFollow: {
-    marginTop: 0,
-  },
-  agendaRowTitle: {
-    fontSize: 11,
-    letterSpacing: 1.2,
-    color: colors.muted,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  agendaRowStat: {
-    fontFamily: SERIF,
-  },
-  agendaRowNum: {
-    fontSize: 26,
-    color: colors.accent,
-  },
-  agendaRowOf: {
-    fontSize: 18,
-    color: colors.muted,
-  },
-  agendaRowHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: colors.muted,
-  },
-  agendaRowMuted: {
-    fontSize: 13,
-    color: colors.muted,
-    lineHeight: 20,
   },
 });
