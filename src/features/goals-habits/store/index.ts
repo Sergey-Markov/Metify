@@ -5,6 +5,8 @@ export type {
   AddHabitDraft,
 } from './types';
 export {
+  selectGoals,
+  selectHabits,
   selectActiveGoals,
   selectCompletedGoals,
   selectTodayHabits,

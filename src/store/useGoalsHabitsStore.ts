@@ -4,6 +4,8 @@
  */
 export {
   useGoalsHabitsStore,
+  selectGoals,
+  selectHabits,
   selectActiveGoals,
   selectCompletedGoals,
   selectTodayHabits,

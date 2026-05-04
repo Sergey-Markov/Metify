@@ -1,10 +1,13 @@
 import type { GoalsHabitsState } from './types';
 
 /**
- * Derived arrays via `.filter()` — new reference every call.
- * Use with `useShallow` from `zustand/react/shallow` in `useGoalsHabitsStore(...)`,
- * or subscribe to `s.goals` / `s.habits` and `useMemo` locally (React 19 / useSyncExternalStore).
+ * Prefer raw selectors for subscriptions.
+ * Derive filtered arrays inside hooks/components with `useMemo`.
  */
+export const selectGoals = (s: GoalsHabitsState) => s.goals;
+export const selectHabits = (s: GoalsHabitsState) => s.habits;
+
+/** Legacy derived selectors; kept for compatibility. */
 export const selectActiveGoals = (s: GoalsHabitsState) =>
   s.goals.filter((g) => g.status === 'active');
 

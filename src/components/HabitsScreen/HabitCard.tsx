@@ -4,20 +4,15 @@
 
 import React from "react";
 import {
+  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
 
+import { useSwipeToRevealDelete } from "../../hooks/useSwipeToRevealDelete";
 import type { Habit, HabitCategory } from "../../types/goalsHabits";
 
 const SERIF = Platform.select({ ios: "Georgia", android: "serif" });
@@ -151,33 +146,14 @@ export type HabitCardProps = {
   checked?: boolean;
 };
 
-export const HabitCard = ({
+const HabitCardComponent = ({
   habit,
   onCheck,
   onPress,
   onDelete,
   checked = false,
 }: HabitCardProps) => {
-  const translateX = useSharedValue(0);
-  const THRESHOLD = -80;
-
-  const gesture = Gesture.Pan()
-    .activeOffsetX([-12, 12])
-    .failOffsetY([-18, 18])
-    .onUpdate((e) => {
-      translateX.value = Math.min(0, e.translationX);
-    })
-    .onEnd(() => {
-      if (translateX.value < THRESHOLD) {
-        translateX.value = withTiming(THRESHOLD);
-      } else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const rowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
+  const { panHandlers, animatedStyle } = useSwipeToRevealDelete({ enabled: true });
 
   const cat = CAT_OPTIONS.find((c) => c.value === habit.category);
   const catColor = cat?.color ?? colors.muted;
@@ -194,10 +170,10 @@ export const HabitCard = ({
         <Text style={styles.deleteActionText}>🗑</Text>
       </TouchableOpacity>
 
-      <GestureDetector gesture={gesture}>
-        <Animated.View
-          style={[styles.habitCard, checked && styles.habitCardDone, rowStyle]}
-        >
+      <Animated.View
+        {...panHandlers}
+        style={[styles.habitCard, checked && styles.habitCardDone, animatedStyle]}
+      >
           <View style={styles.cardTop}>
             <View
               style={[
@@ -272,8 +248,9 @@ export const HabitCard = ({
               </View>
             </View>
           </TouchableOpacity>
-        </Animated.View>
-      </GestureDetector>
+      </Animated.View>
     </View>
   );
 };
+
+export const HabitCard = React.memo(HabitCardComponent);

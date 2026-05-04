@@ -23,13 +23,13 @@ import {
  * Pauses when app goes to background (saves battery).
  */
 export function useCountdown(): CountdownTime | null {
-  const profile    = useLifeTimerStore(selectProfile);
+  const dateOfBirth = useLifeTimerStore((s) => s.profile.dateOfBirth);
   const deathDate  = useLifeTimerStore(selectDeathDate);
 
   const computeCountdown = useCallback(() => {
     if (!deathDate) return null;
-    return buildCountdown(profile.dateOfBirth, new Date(deathDate));
-  }, [profile.dateOfBirth, deathDate]);
+    return buildCountdown(dateOfBirth, new Date(deathDate));
+  }, [dateOfBirth, deathDate]);
 
   const [countdown, setCountdown] = useState<CountdownTime | null>(computeCountdown);
 
@@ -63,15 +63,15 @@ export function useCountdown(): CountdownTime | null {
  * Returns memoized week-grid cells. Re-computes only when DOB or lifespan changes.
  */
 export function useLifeGrid(): { cells: WeekCell[]; livedWeeks: number; totalWeeks: number } {
-  const profile      = useLifeTimerStore(selectProfile);
+  const dateOfBirth = useLifeTimerStore((s) => s.profile.dateOfBirth);
   const adjustedYears = useLifeTimerStore(selectAdjustedYears);
 
   return useMemo(() => {
-    const cells      = buildWeekGrid(profile.dateOfBirth, adjustedYears);
+    const cells      = buildWeekGrid(dateOfBirth, adjustedYears);
     const livedWeeks = cells.filter(c => c.state !== 'future').length;
     const totalWeeks = cells.length;
     return { cells, livedWeeks, totalWeeks };
-  }, [profile.dateOfBirth, adjustedYears]);
+  }, [dateOfBirth, adjustedYears]);
 }
 
 // ─── useDailyMotivation ───────────────────────────────────────────────────────
@@ -90,7 +90,9 @@ export function useDailyMotivation(): { quote: string; sub: string } {
  * Returns controlled field values + handlers + submit action.
  */
 export function useOnboardingForm() {
-  const { profile, updateProfile, completeOnboarding } = useLifeTimerStore();
+  const profile = useLifeTimerStore(selectProfile);
+  const updateProfile = useLifeTimerStore((s) => s.updateProfile);
+  const completeOnboarding = useLifeTimerStore((s) => s.completeOnboarding);
 
   const setField = useCallback(
     <K extends keyof typeof profile>(key: K, value: typeof profile[K]) => {

@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 
-import { useGoalsHabitsStore, selectActiveGoals } from '../store';
+import { useGoalsHabitsStore } from '../store';
 import { computeGoalsSummary } from '../domain';
 
 export function useGoalsSummary() {
-  const goals = useGoalsHabitsStore(useShallow(selectActiveGoals));
-  return useMemo(() => computeGoalsSummary(goals), [goals]);
+  const goals = useGoalsHabitsStore((s) => s.goals);
+  const activeGoals = useMemo(
+    () => goals.filter((goal) => goal.status === 'active'),
+    [goals],
+  );
+  return useMemo(() => computeGoalsSummary(activeGoals), [activeGoals]);
 }

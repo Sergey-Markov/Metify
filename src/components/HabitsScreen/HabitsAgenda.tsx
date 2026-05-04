@@ -1,12 +1,10 @@
 /**
- * Habits week/month calendar + selected-day summary (react-native-calendars Agenda).
+ * Habits compact week calendar + selected-day summary.
  */
 
-import React, { useCallback, useMemo } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import type { AgendaEntry, AgendaSchedule } from "react-native-calendars";
-import { Agenda, LocaleConfig } from "react-native-calendars";
-import type { ReservationListProps } from "react-native-calendars/src/agenda/reservation-list";
+import React, { useCallback, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { LocaleConfig, WeekCalendar } from "react-native-calendars";
 
 import type { Habit } from "../../types/goalsHabits";
 import {
@@ -69,12 +67,11 @@ const colors = {
   green: "#4ecb8d",
 };
 
-const AGENDA_MIN_HEIGHT = 248;
-const ROW_HEIGHT = 118;
+const AGENDA_MIN_HEIGHT = 176;
 const AGENDA_PAST_DAYS_WINDOW = 400;
 const AGENDA_FUTURE_DAYS_WINDOW = 400;
 
-type HabitAgendaRow = AgendaEntry & {
+type HabitAgendaRow = {
   day: string;
   dailyDone: number;
   dailyDue: number;
@@ -84,25 +81,15 @@ type HabitAgendaRow = AgendaEntry & {
   weeklyRate: number;
 };
 
-/** Same as library `toMarkingFormat` (local days, no UTC shift). */
-function dateKeyFromAgendaDay(d: {
-  getFullYear: () => number;
-  getMonth: () => number;
-  getDate: () => number;
-}): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 function buildItemsAndMarkings(
   habits: Habit[],
   from: Date,
   to: Date,
 ): {
-  items: AgendaSchedule;
+  rowsByDay: Record<string, HabitAgendaRow>;
   markedDates: Record<string, { marked?: boolean; dotColor?: string }>;
 } {
-  const items: AgendaSchedule = {};
+  const rowsByDay: Record<string, HabitAgendaRow> = {};
   const markedDates: Record<string, { marked?: boolean; dotColor?: string }> =
     {};
   const todayKey = habitLocalDateKey(new Date());
@@ -156,9 +143,7 @@ function buildItemsAndMarkings(
     const weeklyDone = weeklyDoneFromAnyDayHabits + weeklyDoneFromDayHabits;
     const weeklyRate = weeklyDue > 0 ? weeklyDone / weeklyDue : 0;
 
-    const row: HabitAgendaRow = {
-      name: `habits-${dayKey}`,
-      height: ROW_HEIGHT,
+    rowsByDay[dayKey] = {
       day: dayKey,
       dailyDone,
       dailyDue,
@@ -167,7 +152,6 @@ function buildItemsAndMarkings(
       weeklyDue,
       weeklyRate,
     };
-    items[dayKey] = [row];
 
     const isPast = dayKey < todayKey;
     if (dailyDue > 0 && isPast) {
@@ -179,7 +163,7 @@ function buildItemsAndMarkings(
     }
   }
 
-  return { items, markedDates };
+  return { rowsByDay, markedDates };
 }
 
 export type HabitsAgendaProps = {
@@ -187,7 +171,7 @@ export type HabitsAgendaProps = {
 };
 
 export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
-  const { items, markedDates } = useMemo(() => {
+  const { rowsByDay, markedDates } = useMemo(() => {
     const end = new Date();
     end.setDate(end.getDate() + AGENDA_FUTURE_DAYS_WINDOW);
     const start = new Date();
@@ -195,7 +179,18 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
     return buildItemsAndMarkings(habits, start, end);
   }, [habits]);
 
-  const selected = useMemo(() => habitLocalDateKey(new Date()), []);
+  const defaultSelectedDay = useMemo(() => habitLocalDateKey(new Date()), []);
+  const [selectedDay, setSelectedDay] = useState(defaultSelectedDay);
+
+  const selectedRow = rowsByDay[selectedDay] ?? {
+    day: selectedDay,
+    dailyDone: 0,
+    dailyDue: 0,
+    dailyRate: 0,
+    weeklyDone: 0,
+    weeklyDue: 0,
+    weeklyRate: 0,
+  };
 
   const calendarTheme = useMemo(
     () => ({
@@ -216,120 +211,45 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
     }),
     [],
   );
-
-  const rowHasChanged = useCallback((r1: AgendaEntry, r2: AgendaEntry) => {
-    const a = r1 as HabitAgendaRow;
-    const b = r2 as HabitAgendaRow;
-    return (
-      a.day !== b.day ||
-      a.dailyDone !== b.dailyDone ||
-      a.dailyDue !== b.dailyDue ||
-      a.weeklyDone !== b.weeklyDone ||
-      a.weeklyDue !== b.weeklyDue
-    );
-  }, []);
-
-  const renderItem = useCallback((item: AgendaEntry, firstItem: boolean) => {
-    const row = item as HabitAgendaRow;
-    return (
-      <AgendaProgress
-        firstItem={firstItem}
-        dailyDone={row.dailyDone}
-        dailyDue={row.dailyDue}
-        weeklyDone={row.weeklyDone}
-        weeklyDue={row.weeklyDue}
-      />
-    );
-  }, []);
-
-  const renderEmptyData = useCallback(
-    () => (
-      <View style={styles.staticListHost}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    ),
-    [],
+  const mergedMarkedDates = useMemo(
+    () => ({
+      ...markedDates,
+      [selectedDay]: {
+        ...(markedDates[selectedDay] ?? {}),
+        selected: true,
+        selectedColor: colors.accent,
+      },
+    }),
+    [markedDates, selectedDay],
   );
 
-  /** Avoid Agenda's inner FlatList (nested in screen ScrollView + update loop on new prop refs). */
-  const renderList = useCallback((listProps: ReservationListProps) => {
-    const {
-      items: agendaItems,
-      selectedDay,
-      renderItem: ri,
-      renderEmptyData: red,
-      theme: agendaTheme,
-    } = listProps;
-
-    if (!selectedDay) {
-      return (
-        <View style={styles.staticListHost}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
-      );
-    }
-
-    const dateKey = dateKeyFromAgendaDay(selectedDay);
-    const dayItems = agendaItems?.[dateKey];
-
-    if (!agendaItems || !dayItems?.length) {
-      return (
-        <View
-          style={[
-            styles.staticListHost,
-            {
-              backgroundColor: agendaTheme?.backgroundColor as
-                | string
-                | undefined,
-            },
-          ]}
-        >
-          {red?.() ?? <ActivityIndicator color={colors.accent} />}
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={[
-          styles.staticListHost,
-          {
-            backgroundColor:
-              (agendaTheme?.reservationsBackgroundColor as
-                | string
-                | undefined) ||
-              (agendaTheme?.backgroundColor as string | undefined),
-          },
-        ]}
-      >
-        {dayItems.map((reservation, i) => (
-          <View key={`${reservation.name}-${i}`}>
-            {ri?.(reservation, i === 0)}
-          </View>
-        ))}
-      </View>
-    );
-  }, []);
+  const onDayPress = useCallback(
+    (day: { dateString: string }) => {
+      const next = day.dateString;
+      if (!next) return;
+      setSelectedDay(next);
+    },
+    [],
+  );
 
   return (
     <View
       style={styles.wrapper}
       accessibilityLabel="Календар звичок"
     >
-      <Agenda
-        items={items}
-        selected={selected}
-        markedDates={markedDates}
-        showOnlySelectedDayItems
-        hideKnob
+      <WeekCalendar
+        current={selectedDay}
+        markedDates={mergedMarkedDates}
         firstDay={1}
-        pastScrollRange={12}
-        futureScrollRange={12}
-        rowHasChanged={rowHasChanged}
-        renderItem={renderItem}
-        renderEmptyData={renderEmptyData}
-        renderList={renderList}
+        onDayPress={onDayPress}
         theme={calendarTheme}
+      />
+      <AgendaProgress
+        firstItem
+        dailyDone={selectedRow.dailyDone}
+        dailyDue={selectedRow.dailyDue}
+        weeklyDone={selectedRow.weeklyDone}
+        weeklyDue={selectedRow.weeklyDue}
       />
     </View>
   );
@@ -338,12 +258,6 @@ export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
 const styles = StyleSheet.create({
   wrapper: {
     minHeight: AGENDA_MIN_HEIGHT,
-    height: AGENDA_MIN_HEIGHT,
     marginBottom: 8,
-  },
-  staticListHost: {
-    flexGrow: 1,
-    minHeight: ROW_HEIGHT + 48,
-    justifyContent: "flex-start",
   },
 });

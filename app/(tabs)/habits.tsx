@@ -166,13 +166,13 @@ export default function HabitsScreen() {
             accessibilityLabel="Додати звичку"
           />
         </View>
+        <HabitsAgenda habits={habits} />
+
         <FlatList
           data={listData()}
           keyExtractor={(item) => item.key}
           renderItem={renderListItem}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<HabitsAgenda habits={habits} />}
-          contentContainerStyle={s.listContent}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={7}
@@ -260,7 +260,6 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   headerTitle: { fontFamily: SERIF, fontSize: 32, color: colors.text },
-  listContent: { paddingBottom: 40 },
   listSpacer: { height: 40 },
 
   // Summary

@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Animated,
   Platform,
   StyleSheet,
   Text,
@@ -7,6 +8,7 @@ import {
   View,
 } from "react-native";
 
+import { useSwipeToRevealDelete } from "../../hooks/useSwipeToRevealDelete";
 import type { Goal, GoalCategory, GoalPriority } from "../../types/goalsHabits";
 import { daysUntilGoal } from "../../utils/goalsHabits";
 
@@ -57,14 +59,32 @@ const CATEGORY_LABELS: Record<GoalCategory, string> = {
 };
 
 const styles = StyleSheet.create({
-  goalCard: {
+  swipeWrapper: {
     marginHorizontal: 24,
     marginBottom: 12,
+    position: "relative",
+  },
+  deleteAction: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 72,
+    backgroundColor: "#3a1010",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteActionText: {
+    fontSize: 20,
+  },
+  goalCard: {
     backgroundColor: colors.bg2,
     borderRadius: 16,
     padding: 16,
     borderWidth: 0.5,
     borderColor: colors.subtle,
+    overflow: "hidden",
   },
   goalCardDone: { opacity: 0.5 },
   goalCardTop: {
@@ -128,7 +148,6 @@ const styles = StyleSheet.create({
   cardActionBtn: { paddingVertical: 4 },
   cardActionEdit: { fontSize: 12, color: colors.accent, fontWeight: "500" },
   cardActionMuted: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  cardActionDanger: { fontSize: 12, color: colors.red, fontWeight: "500" },
   completeBtn: {
     backgroundColor: "rgba(78,203,141,0.12)",
     borderRadius: 8,
@@ -152,7 +171,7 @@ export type GoalCardProps = {
   completed?: boolean;
 };
 
-export const GoalCard = ({
+const GoalCardComponent = ({
   goal,
   onPress,
   onComplete,
@@ -161,6 +180,10 @@ export const GoalCard = ({
   onReopen,
   completed,
 }: GoalCardProps) => {
+  const { panHandlers, animatedStyle } = useSwipeToRevealDelete({
+    enabled: Boolean(onDelete),
+  });
+
   const catColor = CAT_COLORS[goal.category] ?? colors.muted;
   const daysLeft = daysUntilGoal(goal);
   const overdue = daysLeft === 0 && goal.progress < 100;
@@ -241,60 +264,68 @@ export const GoalCard = ({
   );
 
   const showActions = Boolean(
-    (onEdit && !completed) || onDelete || (completed && onReopen),
+    (onEdit && !completed) || (completed && onReopen),
   );
 
   return (
-    <View style={styles.goalCard}>
-      <View style={completed ? styles.goalCardDone : undefined}>
-        {onPress ? (
-          <TouchableOpacity
-            onPress={onPress}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityHint="Відкрити деталі цілі"
-          >
-            {main}
-          </TouchableOpacity>
-        ) : (
-          main
-        )}
-      </View>
-
-      {showActions && (
-        <View style={styles.cardActions}>
-          {completed && onReopen && (
-            <TouchableOpacity
-              style={styles.cardActionBtn}
-              onPress={onReopen}
-              accessibilityRole="button"
-              accessibilityLabel="Повернути ціль у активні"
-            >
-              <Text style={styles.cardActionMuted}>Повернути в активні</Text>
-            </TouchableOpacity>
-          )}
-          {onEdit && !completed && (
-            <TouchableOpacity
-              style={styles.cardActionBtn}
-              onPress={onEdit}
-              accessibilityRole="button"
-              accessibilityLabel="Редагувати ціль"
-            >
-              <Text style={styles.cardActionEdit}>Редагувати</Text>
-            </TouchableOpacity>
-          )}
-          {onDelete && (
-            <TouchableOpacity
-              style={styles.cardActionBtn}
-              onPress={onDelete}
-              accessibilityRole="button"
-              accessibilityLabel="Видалити ціль"
-            >
-              <Text style={styles.cardActionDanger}>Видалити</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+    <View style={styles.swipeWrapper}>
+      {onDelete && (
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel="Видалити ціль"
+        >
+          <Text style={styles.deleteActionText}>🗑</Text>
+        </TouchableOpacity>
       )}
+
+      <Animated.View
+        {...panHandlers}
+        style={[styles.goalCard, animatedStyle]}
+      >
+          <View style={completed ? styles.goalCardDone : undefined}>
+            {onPress ? (
+              <TouchableOpacity
+                onPress={onPress}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityHint="Відкрити деталі цілі"
+              >
+                {main}
+              </TouchableOpacity>
+            ) : (
+              main
+            )}
+          </View>
+
+          {showActions && (
+            <View style={styles.cardActions}>
+              {completed && onReopen && (
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={onReopen}
+                  accessibilityRole="button"
+                  accessibilityLabel="Повернути ціль у активні"
+                >
+                  <Text style={styles.cardActionMuted}>Повернути в активні</Text>
+                </TouchableOpacity>
+              )}
+              {onEdit && !completed && (
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={onEdit}
+                  accessibilityRole="button"
+                  accessibilityLabel="Редагувати ціль"
+                >
+                  <Text style={styles.cardActionEdit}>Редагувати</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+      </Animated.View>
     </View>
   );
 };
+
+export const GoalCard = React.memo(GoalCardComponent);

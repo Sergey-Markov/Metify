@@ -1,22 +1,25 @@
 import { useMemo, useCallback } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 
-import { useGoalsHabitsStore, selectTodayHabits } from '../store';
+import { useGoalsHabitsStore } from '../store';
 import { partitionHabitsForToday } from '../domain';
 
 export function useHabitsToday() {
-  const habits = useGoalsHabitsStore(useShallow(selectTodayHabits));
+  const habits = useGoalsHabitsStore((s) => s.habits);
   const checkHabit = useGoalsHabitsStore((s) => s.checkHabit);
 
+  const activeHabits = useMemo(
+    () => habits.filter((habit) => !habit.archivedAt),
+    [habits],
+  );
   const { due, done, pending, completionRate } = useMemo(
-    () => partitionHabitsForToday(habits),
-    [habits]
+    () => partitionHabitsForToday(activeHabits),
+    [activeHabits],
   );
 
   const toggle = useCallback((id: string) => checkHabit(id), [checkHabit]);
 
   return {
-    habits,
+    habits: activeHabits,
     due,
     done,
     pending,
