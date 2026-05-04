@@ -1,35 +1,74 @@
 ---
-description: Decision memory system
+description: Automatic decision memory system
 alwaysApply: true
 ---
 
-You must maintain a persistent decision memory for the project.
+You must automatically maintain project decision memory.
 
-## Purpose
+## Memory File
 
-Prevent repeating decisions, losing context, and re-discussing resolved topics.
-
-## Memory Location
-
-Store decisions in:
+Use:
 
 .cursor/memory/decisions.md
 
-If file does not exist → create it.
+If the file does not exist, create it.
 
-## When to Save
+## Auto-Save Trigger
 
-Save ONLY after CEO explicitly approves a decision.
+Automatically save a decision when the CEO clearly approves it.
+
+Approval phrases include:
+
+- approved
+- approve
+- підтверджую
+- затверджую
+- погоджуюсь
+- ок
+- добре
+- приймаю
+- так, робимо
+- yes
+- go
+
+## What To Save
+
+Save only meaningful decisions:
+
+- selected stack
+- architecture
+- database choice
+- state management choice
+- auth strategy
+- API approach
+- project scope
+- MVP features
+- dependency approval
+- deployment approach
+- PR/task approval
 
 Do NOT save:
 
+- random chat
 - drafts
-- discussions
+- jokes
 - rejected ideas
+- unapproved proposals
+- temporary thoughts
 
-## Format
+## Auto-Save Rule
 
-Append new entries:
+After CEO approval:
+
+1. Identify what exactly was approved.
+2. Append a decision entry to `.cursor/memory/decisions.md`.
+3. Continue workflow.
+
+Do not ask the CEO to say "save this decision".
+
+## Memory Entry Format
+
+Append this:
 
 ---
 
@@ -37,45 +76,66 @@ Append new entries:
 
 Date: [YYYY-MM-DD]
 
+Approved by:
+CEO
+
 Context:
-Short description of the problem.
+[what problem or question was being decided]
 
 Decision:
-What was chosen.
+[what was approved]
 
 Reasoning:
-Why this decision was made.
+[why this option was selected]
 
 Alternatives considered:
 
-- option A
-- option B
+- [alternative 1]
+- [alternative 2]
 
 Risks:
 
-- risk 1
-- risk 2
+- [risk 1]
+- [risk 2]
+
+Status:
+Active
 
 ---
 
-## Usage Rule
+## Before New Decisions
 
-Before making new decisions:
+Before proposing stack, architecture, major feature scope, or dependency changes:
 
-1. Check memory file
-2. If similar decision exists:
-   - reuse it
-   - do not override unless CEO asks
+1. Read `.cursor/memory/decisions.md`.
+2. Check if similar active decision exists.
+3. Reuse it unless CEO explicitly changes direction.
 
-## Update Rule
+## Updating Decisions
 
-If CEO changes decision:
+If CEO changes a previous decision:
 
-- do NOT delete old one
-- append new entry with note:
-  "Updated decision"
+- do not delete old entry
+- append a new entry
+- mark it as:
+
+Status:
+Updated decision
+
+Mention which previous decision it replaces.
+
+## Conflict Rule
+
+If current request conflicts with memory:
+
+1. Notify CEO:
+   "У памʼяті є попереднє рішення..."
+2. Explain the conflict.
+3. Ask whether to keep old decision or approve the new one.
 
 ## Forbidden
 
-- do not silently override past decisions
-- do not ignore memory
+- do not silently override memory
+- do not save unapproved decisions
+- do not invent approval
+- do not ignore existing memory

@@ -65,3 +65,13 @@ After CEO approves the final proposal:
 12. Ask CEO before creating PR.
 
 Never implement multiple tasks in one PR unless CEO approves.
+
+## Auto-Memory Rule
+
+After any clear CEO approval, automatically save the approved decision to:
+
+.cursor/memory/decisions.md
+
+Do not ask the CEO to manually request saving.
+
+Before proposing stack, architecture, scope, or dependencies, check decision memory first.
