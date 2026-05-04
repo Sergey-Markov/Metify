@@ -71,6 +71,8 @@ const colors = {
 
 const AGENDA_MIN_HEIGHT = 248;
 const ROW_HEIGHT = 118;
+const AGENDA_PAST_DAYS_WINDOW = 400;
+const AGENDA_FUTURE_DAYS_WINDOW = 400;
 
 type HabitAgendaRow = AgendaEntry & {
   day: string;
@@ -103,14 +105,31 @@ function buildItemsAndMarkings(
   const items: AgendaSchedule = {};
   const markedDates: Record<string, { marked?: boolean; dotColor?: string }> =
     {};
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayKey = habitLocalDateKey(new Date());
+  const dailyHabits = habits.filter((h) => h.frequency === "daily");
+  const weeklyAnyDayHabits = habits.filter(
+    (h) => h.frequency === "weekly" && h.targetDays.length === 0,
+  );
+  const weeklyHabitsByDay = new Map<number, Habit[]>();
+
+  for (let day = 0; day < 7; day += 1) {
+    weeklyHabitsByDay.set(
+      day,
+      habits.filter(
+        (h) =>
+          h.frequency === "weekly" &&
+          h.targetDays.length > 0 &&
+          h.targetDays.includes(day),
+      ),
+    );
+  }
+
+  const weeklyAnyDayDoneByWeek = new Map<string, number>();
 
   for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
     const dayKey = habitLocalDateKey(d);
     const dow = d.getDay();
 
-    const dailyHabits = habits.filter((h) => h.frequency === "daily");
     const dailyDue = dailyHabits.length;
     const dailyDone = dailyHabits.filter((h) =>
       h.completions.includes(dayKey),
@@ -118,18 +137,23 @@ function buildItemsAndMarkings(
     const dailyRate = dailyDue > 0 ? dailyDone / dailyDue : 0;
 
     const { start: wStart, end: wEnd } = habitWeekRangeKeys(d);
-    let weeklyDue = 0;
-    let weeklyDone = 0;
-    for (const h of habits) {
-      if (h.frequency !== "weekly") continue;
-      if (!h.targetDays.length) {
-        weeklyDue++;
-        if (habitHasCompletionInRange(h, wStart, wEnd)) weeklyDone++;
-      } else if (h.targetDays.includes(dow)) {
-        weeklyDue++;
-        if (h.completions.includes(dayKey)) weeklyDone++;
-      }
+    const weekKey = `${wStart}_${wEnd}`;
+    const weeklyDueFromAnyDayHabits = weeklyAnyDayHabits.length;
+    const weeklyDueFromDayHabits = weeklyHabitsByDay.get(dow)?.length ?? 0;
+    const weeklyDue = weeklyDueFromAnyDayHabits + weeklyDueFromDayHabits;
+
+    let weeklyDoneFromAnyDayHabits = weeklyAnyDayDoneByWeek.get(weekKey);
+    if (weeklyDoneFromAnyDayHabits === undefined) {
+      weeklyDoneFromAnyDayHabits = weeklyAnyDayHabits.filter((h) =>
+        habitHasCompletionInRange(h, wStart, wEnd),
+      ).length;
+      weeklyAnyDayDoneByWeek.set(weekKey, weeklyDoneFromAnyDayHabits);
     }
+
+    const weeklyDoneFromDayHabits =
+      weeklyHabitsByDay.get(dow)?.filter((h) => h.completions.includes(dayKey))
+        .length ?? 0;
+    const weeklyDone = weeklyDoneFromAnyDayHabits + weeklyDoneFromDayHabits;
     const weeklyRate = weeklyDue > 0 ? weeklyDone / weeklyDue : 0;
 
     const row: HabitAgendaRow = {
@@ -145,9 +169,7 @@ function buildItemsAndMarkings(
     };
     items[dayKey] = [row];
 
-    const dayOnly = new Date(d);
-    dayOnly.setHours(0, 0, 0, 0);
-    const isPast = dayOnly < today;
+    const isPast = dayKey < todayKey;
     if (dailyDue > 0 && isPast) {
       if (dailyRate >= 1) {
         markedDates[dayKey] = { marked: true, dotColor: colors.green };
@@ -167,9 +189,9 @@ export type HabitsAgendaProps = {
 export const HabitsAgenda = ({ habits }: HabitsAgendaProps) => {
   const { items, markedDates } = useMemo(() => {
     const end = new Date();
-    end.setDate(end.getDate() + 730);
+    end.setDate(end.getDate() + AGENDA_FUTURE_DAYS_WINDOW);
     const start = new Date();
-    start.setDate(start.getDate() - 730);
+    start.setDate(start.getDate() - AGENDA_PAST_DAYS_WINDOW);
     return buildItemsAndMarkings(habits, start, end);
   }, [habits]);
 

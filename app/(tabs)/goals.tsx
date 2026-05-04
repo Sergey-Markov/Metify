@@ -12,6 +12,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
+  FlatList,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -140,6 +141,137 @@ const GoalsScreen = () => {
   const openDetail = useCallback((g: Goal) => setSelectedGoal(g), []);
   const closeDetail = useCallback(() => setSelectedGoal(null), []);
 
+  type GoalsListItem =
+    | { type: "goal"; key: string; goal: Goal; completed?: boolean }
+    | { type: "empty-active"; key: string }
+    | { type: "empty-completed"; key: string }
+    | { type: "toggle-completed"; key: string; count: number }
+    | { type: "spacer"; key: string };
+
+  const listData = useMemo<GoalsListItem[]>(() => {
+    const items: GoalsListItem[] = [];
+
+    if (filterCat === "completed") {
+      if (filteredCompleted.length === 0) {
+        items.push({ type: "empty-completed", key: "empty-completed" });
+      } else {
+        for (const goal of filteredCompleted) {
+          items.push({
+            type: "goal",
+            key: `completed-${goal.id}`,
+            goal,
+            completed: true,
+          });
+        }
+      }
+      items.push({ type: "spacer", key: "spacer" });
+      return items;
+    }
+
+    if (filtered.length === 0) {
+      items.push({ type: "empty-active", key: "empty-active" });
+    } else {
+      for (const goal of filtered) {
+        items.push({ type: "goal", key: `active-${goal.id}`, goal });
+      }
+    }
+
+    if (filteredCompleted.length > 0) {
+      items.push({
+        type: "toggle-completed",
+        key: "toggle-completed",
+        count: filteredCompleted.length,
+      });
+
+      if (showDone) {
+        for (const goal of filteredCompleted) {
+          items.push({
+            type: "goal",
+            key: `collapsed-completed-${goal.id}`,
+            goal,
+            completed: true,
+          });
+        }
+      }
+    }
+
+    items.push({ type: "spacer", key: "spacer" });
+    return items;
+  }, [filterCat, filtered, filteredCompleted, showDone]);
+
+  const renderListItem = useCallback(
+    ({ item }: { item: GoalsListItem }) => {
+      if (item.type === "goal") {
+        if (item.completed) {
+          return (
+            <GoalCard
+              goal={item.goal}
+              completed
+              onPress={() => openDetail(item.goal)}
+              onReopen={() => reopenGoal(item.goal)}
+              onDelete={() => requestDeleteGoal(item.goal.id)}
+            />
+          );
+        }
+
+        return (
+          <GoalCard
+            goal={item.goal}
+            onPress={() => openDetail(item.goal)}
+            onComplete={() => completeGoal(item.goal.id)}
+            onEdit={() => setEditingGoal(item.goal)}
+            onDelete={() => requestDeleteGoal(item.goal.id)}
+          />
+        );
+      }
+
+      if (item.type === "empty-active") {
+        return (
+          <EmptyGoals
+            onAdd={() => setShowAdd(true)}
+            filtered={filterCat !== "all"}
+          />
+        );
+      }
+
+      if (item.type === "empty-completed") {
+        return (
+          <EmptyGoals
+            onAdd={() => setShowAdd(true)}
+            completedEmpty
+          />
+        );
+      }
+
+      if (item.type === "toggle-completed") {
+        return (
+          <View style={s.completedSection}>
+            <TouchableOpacity
+              style={s.completedToggle}
+              onPress={toggleDone}
+            >
+              <Text style={s.completedToggleText}>
+                Виконані цілі ({item.count})
+              </Text>
+              <Text style={s.completedArrow}>{showDone ? "▲" : "▼"}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+
+      return <View style={s.listSpacer} />;
+    },
+    [
+      completeGoal,
+      filterCat,
+      openDetail,
+      reopenGoal,
+      requestDeleteGoal,
+      showDone,
+      toggleDone,
+    ],
+  );
+
   // Sync selectedGoal when store updates (e.g. milestone toggle)
   const liveSelectedGoal = useMemo(
     () =>
@@ -189,78 +321,16 @@ const GoalsScreen = () => {
         ))}
       </ScrollView>
 
-      <ScrollView
-        style={s.scroll}
+      <FlatList
+        data={listData}
+        keyExtractor={(item) => item.key}
+        renderItem={renderListItem}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Active goals */}
-        {filterCat !== "completed" && filtered.length === 0 && (
-          <EmptyGoals
-            onAdd={() => setShowAdd(true)}
-            filtered={filterCat !== "all"}
-          />
-        )}
-
-        {filterCat !== "completed" &&
-          filtered.map((g) => (
-            <GoalCard
-              key={g.id}
-              goal={g}
-              onPress={() => openDetail(g)}
-              onComplete={() => completeGoal(g.id)}
-              onEdit={() => setEditingGoal(g)}
-              onDelete={() => requestDeleteGoal(g.id)}
-            />
-          ))}
-
-        {/* Тільки виконані (чіп «Виконані») */}
-        {filterCat === "completed" &&
-          (filteredCompleted.length === 0 ? (
-            <EmptyGoals
-              onAdd={() => setShowAdd(true)}
-              completedEmpty
-            />
-          ) : (
-            filteredCompleted.map((g) => (
-              <GoalCard
-                key={g.id}
-                goal={g}
-                completed
-                onPress={() => openDetail(g)}
-                onReopen={() => reopenGoal(g)}
-                onDelete={() => requestDeleteGoal(g.id)}
-              />
-            ))
-          ))}
-
-        {/* Виконані під активним списком (згортається) */}
-        {filterCat !== "completed" && filteredCompleted.length > 0 && (
-          <View style={s.completedSection}>
-            <TouchableOpacity
-              style={s.completedToggle}
-              onPress={toggleDone}
-            >
-              <Text style={s.completedToggleText}>
-                Виконані цілі ({filteredCompleted.length})
-              </Text>
-              <Text style={s.completedArrow}>{showDone ? "▲" : "▼"}</Text>
-            </TouchableOpacity>
-            {showDone &&
-              filteredCompleted.map((g) => (
-                <GoalCard
-                  key={g.id}
-                  goal={g}
-                  completed
-                  onPress={() => openDetail(g)}
-                  onReopen={() => reopenGoal(g)}
-                  onDelete={() => requestDeleteGoal(g.id)}
-                />
-              ))}
-          </View>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === "android"}
+      />
 
       {/* Goal detail sheet */}
       {liveSelectedGoal && (
@@ -356,7 +426,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
 
-  scroll: { flex: 1 },
+  listSpacer: { height: 40 },
 
   // Completed section
   completedSection: { paddingHorizontal: 24, marginBottom: 12 },

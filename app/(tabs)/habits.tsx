@@ -10,10 +10,9 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { Alert, Platform, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import {
   GestureHandlerRootView,
-  ScrollView,
 } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -56,6 +55,94 @@ export default function HabitsScreen() {
     [deleteHabit],
   );
 
+  type HabitsListItem =
+    | {
+        type: "section";
+        key: string;
+        title: string;
+        count: number;
+        muted?: boolean;
+      }
+    | { type: "habit"; key: string; habit: Habit; checked?: boolean }
+    | { type: "empty"; key: string }
+    | { type: "spacer"; key: string };
+
+  const listData = useCallback((): HabitsListItem[] => {
+    const items: HabitsListItem[] = [];
+
+    if (pending.length > 0) {
+      items.push({
+        type: "section",
+        key: "section-pending",
+        title: "До виконання",
+        count: pending.length,
+      });
+      for (const habit of pending) {
+        items.push({ type: "habit", key: `pending-${habit.id}`, habit });
+      }
+    }
+
+    if (done.length > 0) {
+      items.push({
+        type: "section",
+        key: "section-done",
+        title: "Виконано",
+        count: done.length,
+        muted: true,
+      });
+      for (const habit of done) {
+        items.push({
+          type: "habit",
+          key: `done-${habit.id}`,
+          habit,
+          checked: true,
+        });
+      }
+    }
+
+    if (habits.length === 0) {
+      items.push({ type: "empty", key: "empty" });
+    }
+
+    items.push({ type: "spacer", key: "spacer" });
+    return items;
+  }, [done, habits.length, pending]);
+
+  const renderListItem = useCallback(
+    ({ item }: { item: HabitsListItem }) => {
+      if (item.type === "section") {
+        return (
+          <SectionHeader
+            title={item.title}
+            count={item.count}
+            muted={item.muted}
+          />
+        );
+      }
+
+      if (item.type === "habit") {
+        return (
+          <View style={s.section}>
+            <HabitCard
+              habit={item.habit}
+              onCheck={() => checkHabit(item.habit.id)}
+              onPress={() => openDetail(item.habit)}
+              onDelete={() => requestDeleteHabit(item.habit)}
+              checked={item.checked}
+            />
+          </View>
+        );
+      }
+
+      if (item.type === "empty") {
+        return <EmptyHabits onAdd={() => setShowAddSheet(true)} />;
+      }
+
+      return <View style={s.listSpacer} />;
+    },
+    [checkHabit, openDetail, requestDeleteHabit],
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
@@ -79,55 +166,18 @@ export default function HabitsScreen() {
             accessibilityLabel="Додати звичку"
           />
         </View>
-        <ScrollView
-          style={s.scroll}
+        <FlatList
+          data={listData()}
+          keyExtractor={(item) => item.key}
+          renderItem={renderListItem}
           showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-        >
-          <HabitsAgenda habits={habits} />
-
-          {/* Habit sections */}
-          {pending.length > 0 && (
-            <Section
-              title="До виконання"
-              count={pending.length}
-            >
-              {pending.map((h) => (
-                <HabitCard
-                  key={h.id}
-                  habit={h}
-                  onCheck={() => checkHabit(h.id)}
-                  onPress={() => openDetail(h)}
-                  onDelete={() => requestDeleteHabit(h)}
-                />
-              ))}
-            </Section>
-          )}
-
-          {done.length > 0 && (
-            <Section
-              title="Виконано"
-              count={done.length}
-              muted
-            >
-              {done.map((h) => (
-                <HabitCard
-                  key={h.id}
-                  habit={h}
-                  onCheck={() => checkHabit(h.id)}
-                  onPress={() => openDetail(h)}
-                  onDelete={() => requestDeleteHabit(h)}
-                  checked
-                />
-              ))}
-            </Section>
-          )}
-
-          {habits.length === 0 && (
-            <EmptyHabits onAdd={() => setShowAddSheet(true)} />
-          )}
-          <View style={{ height: 40 }} />
-        </ScrollView>
+          ListHeaderComponent={<HabitsAgenda habits={habits} />}
+          contentContainerStyle={s.listContent}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === "android"}
+        />
 
         {/* Detail sheet */}
         {selectedHabit && (
@@ -154,16 +204,14 @@ export default function HabitsScreen() {
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
-function Section({
+function SectionHeader({
   title,
   count,
   muted,
-  children,
 }: {
   title: string;
   count: number;
   muted?: boolean;
-  children: React.ReactNode;
 }) {
   return (
     <View style={s.section}>
@@ -175,7 +223,6 @@ function Section({
           <Text style={s.sectionBadgeText}>{count}</Text>
         </View>
       </View>
-      {children}
     </View>
   );
 }
@@ -213,7 +260,8 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   headerTitle: { fontFamily: SERIF, fontSize: 32, color: colors.text },
-  scroll: { flex: 1 },
+  listContent: { paddingBottom: 40 },
+  listSpacer: { height: 40 },
 
   // Summary
   summaryCard: {
