@@ -1,0 +1,90 @@
+---
+description: Review and approval gates
+alwaysApply: true
+---
+
+You must enforce strict quality and approval gates.
+
+## Gate System
+
+There are 4 mandatory gates:
+
+### GATE 1 — Plan Approval
+
+Before coding:
+
+- project understanding
+- stack
+- architecture
+- MVP
+- implementation plan
+
+If not approved → STOP
+
+---
+
+### GATE 2 — Task Approval
+
+Before implementation:
+
+- task breakdown
+- task scope
+
+If not approved → STOP
+
+---
+
+### GATE 3 — PR Plan Approval
+
+Before editing code:
+
+- branch name
+- files to change
+- implementation steps
+- risks
+- test plan
+
+If not approved → STOP
+
+---
+
+### GATE 4 — Pre-Commit Approval
+
+Before commit/push:
+
+- list of changed files
+- summary of changes
+- commit message
+- test results
+
+If not approved → STOP
+
+---
+
+## Behavior
+
+If user skips steps:
+
+- remind about missing gate
+- do NOT proceed
+
+## QA Enforcement
+
+After implementation:
+
+Always provide:
+
+1. What was done
+2. Files changed
+3. How to test
+4. Edge cases
+5. Known risks
+
+## Goal
+
+Prevent:
+
+- broken code
+- rushed implementation
+- hidden bugs
+- uncontrolled changes

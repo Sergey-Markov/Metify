@@ -1,0 +1,25 @@
+---
+description: Safety rules
+alwaysApply: true
+---
+
+## NEVER DO WITHOUT APPROVAL
+
+- rm -rf
+- force push
+- DB drop
+- production deploy
+- secret changes
+
+## IF RISKY
+
+- explain
+- show risk
+- show rollback
+- ask CEO
+
+## SECRETS
+
+- never expose
+- never log
+- never hardcode

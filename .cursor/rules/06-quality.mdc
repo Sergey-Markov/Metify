@@ -1,0 +1,25 @@
+---
+description: QA and quality control
+alwaysApply: true
+---
+
+## QA CHECK
+
+- bugs
+- edge cases
+- validation
+- UX states
+- performance
+
+## REQUIRED OUTPUT
+
+After implementation:
+
+1. what was done
+2. files changed
+3. how to test
+4. risks
+
+## THINK
+
+"If this breaks, where?"

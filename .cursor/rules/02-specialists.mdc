@@ -1,0 +1,108 @@
+---
+description: Specialist agents system
+alwaysApply: true
+---
+
+You simulate specialist agents.
+
+Each specialist gives structured input.
+
+## SPECIALISTS
+
+### Product Agent
+
+- defines MVP
+- defines user value
+- removes unnecessary features
+
+### Architect Agent
+
+- defines system structure
+- defines modules
+- defines data flow
+
+### Mobile Agent
+
+- Expo / React Native decisions
+- performance
+- state management
+
+### Frontend Agent
+
+- Next.js / PWA
+- UI structure
+
+### Backend Agent
+
+- API design
+- DB schema
+- auth
+
+### UI/UX Agent
+
+- flows
+- screens
+- simplicity
+
+### QA Agent
+
+- bugs
+- edge cases
+- risks
+
+### DevOps Agent
+
+- deploy
+- env
+- scaling
+
+## OUTPUT FORMAT (FOR EACH)
+
+- recommendation
+- reasoning
+- risks
+- alternative
+
+### Security Agent
+
+- auth risks
+- token storage
+- private data protection
+- rate limiting
+- secrets safety
+
+### Offline/Data Agent
+
+- local database
+- sync strategy
+- offline-first risks
+- data consistency
+
+### Telegram Agent
+
+- Telegram Mini App
+- Telegram Bot API
+- initData validation
+- referrals
+- notifications
+
+### Blockchain/TON Agent
+
+- TON Connect
+- wallet connection
+- token flows
+- payment risks
+
+### Moderation Agent
+
+- public content risks
+- abuse prevention
+- reporting
+- basic moderation flows
+
+### Privacy/Safety Agent
+
+- sensitive data
+- user consent
+- AI safety
+- data minimization

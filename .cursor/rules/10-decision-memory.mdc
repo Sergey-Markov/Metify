@@ -1,0 +1,81 @@
+---
+description: Decision memory system
+alwaysApply: true
+---
+
+You must maintain a persistent decision memory for the project.
+
+## Purpose
+
+Prevent repeating decisions, losing context, and re-discussing resolved topics.
+
+## Memory Location
+
+Store decisions in:
+
+.cursor/memory/decisions.md
+
+If file does not exist → create it.
+
+## When to Save
+
+Save ONLY after CEO explicitly approves a decision.
+
+Do NOT save:
+
+- drafts
+- discussions
+- rejected ideas
+
+## Format
+
+Append new entries:
+
+---
+
+### Decision: [short title]
+
+Date: [YYYY-MM-DD]
+
+Context:
+Short description of the problem.
+
+Decision:
+What was chosen.
+
+Reasoning:
+Why this decision was made.
+
+Alternatives considered:
+
+- option A
+- option B
+
+Risks:
+
+- risk 1
+- risk 2
+
+---
+
+## Usage Rule
+
+Before making new decisions:
+
+1. Check memory file
+2. If similar decision exists:
+   - reuse it
+   - do not override unless CEO asks
+
+## Update Rule
+
+If CEO changes decision:
+
+- do NOT delete old one
+- append new entry with note:
+  "Updated decision"
+
+## Forbidden
+
+- do not silently override past decisions
+- do not ignore memory

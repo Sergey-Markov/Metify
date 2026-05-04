@@ -1,0 +1,268 @@
+---
+description: Project type detection and routing
+alwaysApply: true
+---
+
+You must detect the project type before proposing stack, architecture, or implementation.
+
+## Purpose
+
+Route the task to the correct specialists and stack profile.
+
+## Detection Flow
+
+For every new request:
+
+1. Read the user request.
+2. Inspect existing package.json if available.
+3. Inspect app structure if available.
+4. Detect project type.
+5. Select required specialists.
+6. Select possible stack profile.
+7. Ask only necessary clarification questions.
+8. Continue with Lead Agent workflow.
+
+## Project Types
+
+### TYPE 1 — Simple Expo Mobile App
+
+Signals:
+
+- expo
+- expo-router
+- React Native
+- local state
+- timer
+- habits
+- goals
+- profile
+- AsyncStorage
+- Zustand
+- no backend
+
+Use stack profile:
+Simple Expo App
+
+Required specialists:
+
+- Product Agent
+- Mobile Agent
+- UI/UX Agent
+- Architect Agent
+- QA Agent
+
+---
+
+### TYPE 2 — Expo App with Backend
+
+Signals:
+
+- login
+- registration
+- JWT
+- profile sync
+- email verification
+- API
+- MongoDB
+- Express
+- axios
+- SecureStore
+- private user data
+
+Use stack profile:
+Expo + Backend
+
+Required specialists:
+
+- Product Agent
+- Mobile Agent
+- Backend Agent
+- Architect Agent
+- UI/UX Agent
+- QA Agent
+- Security Agent
+
+---
+
+### TYPE 3 — Offline-First Expo App
+
+Signals:
+
+- offline
+- field use
+- local database
+- catalog
+- reference library
+- SQLite
+- WatermelonDB
+- NetInfo
+- FileSystem
+- later sync
+
+Use stack profile:
+Offline-first
+
+Required specialists:
+
+- Product Agent
+- Mobile Agent
+- Architect Agent
+- Offline/Data Agent
+- QA Agent
+- Security Agent
+
+---
+
+### TYPE 4 — Social / Real-Time Expo App
+
+Signals:
+
+- likes
+- dislikes
+- comments
+- followers
+- feed
+- chat
+- public plans
+- socket.io
+- TanStack Query
+- server state
+- real-time updates
+
+Use stack profile:
+Social / Realtime
+
+Required specialists:
+
+- Product Agent
+- Mobile Agent
+- Backend Agent
+- Architect Agent
+- UI/UX Agent
+- QA Agent
+- Security Agent
+- Moderation Agent
+
+---
+
+### TYPE 5 — Web / PWA
+
+Signals:
+
+- Next.js
+- App Router
+- PWA
+- landing page
+- SEO
+- booking
+- order form
+- Telegram notifications
+- Vercel
+- next-intl
+- Tailwind
+- DaisyUI
+- shadcn/ui
+
+Use stack profile:
+Web / PWA
+
+Required specialists:
+
+- Product Agent
+- Frontend Agent
+- Architect Agent
+- UI/UX Agent
+- SEO Agent
+- QA Agent
+- DevOps Agent
+
+---
+
+### TYPE 6 — Telegram Mini App
+
+Signals:
+
+- Telegram Web App
+- Telegram SDK
+- TON Connect
+- Telegram user
+- bot API
+- referral system
+- tasks
+- points
+- wallet
+- WebApp initData
+
+Use stack profile:
+Web / PWA + Telegram Mini App extension
+
+Required specialists:
+
+- Product Agent
+- Frontend Agent
+- Backend Agent
+- Telegram Agent
+- Blockchain/TON Agent if needed
+- Architect Agent
+- Security Agent
+- QA Agent
+
+---
+
+### TYPE 7 — AI Feature / AI Service
+
+Signals:
+
+- AI
+- LLM
+- agents
+- prompt
+- OpenAI
+- image recognition
+- classifier
+- recommendations
+- insights
+- chatbot
+
+Use stack profile:
+Hybrid based on app type
+
+Required specialists:
+
+- Product Agent
+- AI Integration Agent
+- Architect Agent
+- Backend Agent if API is needed
+- Mobile or Frontend Agent depending on platform
+- QA Agent
+- Privacy/Safety Agent
+
+## Ambiguous Requests
+
+If project type is unclear:
+
+1. Choose the most likely type.
+2. State confidence:
+   - high
+   - medium
+   - low
+3. Ask max 3 clarifying questions.
+4. Do not ask questions if existing files clearly answer them.
+
+## Required Output
+
+Before any recommendation, output:
+
+### Project Type Detection
+
+- detected type
+- confidence
+- signals found
+- selected stack profile
+- required specialists
+- missing information if any
+
+## Rule
+
+Never propose architecture before detecting project type.
+Never code before detection, specialist review, Lead review, and CEO approval.

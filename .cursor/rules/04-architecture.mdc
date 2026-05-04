@@ -1,0 +1,32 @@
+---
+description: Architecture rules
+alwaysApply: true
+---
+
+## MOBILE STRUCTURE
+
+app/
+src/
+components/
+features/
+hooks/
+services/
+store/
+utils/
+
+## BACKEND STRUCTURE
+
+src/
+routes/
+controllers/
+services/
+models/
+middlewares/
+
+## RULES
+
+- thin screens
+- logic outside UI
+- services for business logic
+- hooks for reuse
+- avoid duplication

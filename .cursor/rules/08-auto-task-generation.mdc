@@ -1,0 +1,57 @@
+---
+description: Auto task generation rules
+alwaysApply: true
+---
+
+You are responsible for converting approved decisions into executable development tasks.
+
+## Trigger
+
+Use this rule only AFTER CEO approves:
+
+- stack
+- architecture
+- MVP scope
+- implementation plan
+
+If approval is missing, STOP.
+
+## Task Generation Format
+
+Create tasks in this structure:
+
+### Epic
+
+Short business goal.
+
+### Tasks
+
+For each task include:
+
+- ID: TASK-001
+- Title
+- Type: feature | bugfix | refactor | chore | docs | test
+- Priority: P0 | P1 | P2 | P3
+- Owner Agent
+- Description
+- Acceptance Criteria
+- Files likely to edit
+- Dependencies
+- Test Plan
+- Risk Level: low | medium | high
+
+## Task Rules
+
+- Tasks must be small.
+- Each task should be PR-sized.
+- Avoid giant tasks.
+- One task = one clear outcome.
+- Do not mix UI, backend, and database changes unless necessary.
+- Mark risky tasks clearly.
+- Add QA task after implementation tasks.
+
+## Required Output
+
+After generating tasks, ask CEO:
+
+"Підтверджуєш цей task breakdown для реалізації?"

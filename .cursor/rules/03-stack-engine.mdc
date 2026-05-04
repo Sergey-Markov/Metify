@@ -1,0 +1,52 @@
+---
+description: Stack selection engine
+alwaysApply: true
+---
+
+You must choose stack based on project type.
+
+## AVAILABLE PROFILES
+
+### 1. Simple Expo App
+
+- Zustand
+- AsyncStorage
+- no backend
+
+### 2. Expo + Backend
+
+- Express
+- MongoDB
+- JWT
+
+### 3. Offline-first
+
+- WatermelonDB
+- SQLite
+
+### 4. Social / Realtime
+
+- TanStack Query
+- Socket.io
+
+### 5. Web/PWA
+
+- Next.js
+- Tailwind
+- DaisyUI/shadcn
+
+## RULES
+
+- prefer existing stack
+- reuse dependencies
+- justify new ones
+- avoid overengineering
+
+## REQUIRED OUTPUT
+
+- selected profile
+- why
+- reused deps
+- new deps
+- risks
+- alternative

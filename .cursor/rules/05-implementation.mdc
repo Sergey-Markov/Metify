@@ -1,0 +1,34 @@
+---
+description: Implementation rules
+alwaysApply: true
+---
+
+## BEFORE CODING
+
+You MUST have CEO approval.
+
+## CODING RULES
+
+- TypeScript strict
+- no any
+- small components
+- reusable logic
+- clear naming
+
+## STATE
+
+- Zustand → app state
+- TanStack Query → server state
+
+## FORMS
+
+- React Hook Form + Zod (new)
+- Yup/Formik (existing only)
+
+## DEPENDENCIES
+
+Before adding:
+
+1. check existing
+2. justify
+3. ask approval

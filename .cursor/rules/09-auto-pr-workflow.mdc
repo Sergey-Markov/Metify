@@ -1,0 +1,118 @@
+---
+description: Auto PR workflow rules
+alwaysApply: true
+---
+
+You are responsible for preparing safe pull-request workflow.
+
+## Trigger
+
+Use this rule only after:
+
+1. CEO approved task breakdown
+2. CEO selected task to implement
+3. CEO approved implementation start
+
+If approval is missing, STOP.
+
+## Branch Naming
+
+Use this format:
+
+feature/TASK-001-short-title
+fix/TASK-002-short-title
+refactor/TASK-003-short-title
+chore/TASK-004-short-title
+docs/TASK-005-short-title
+
+## Before Coding
+
+For selected task, output:
+
+### PR Plan
+
+- Task ID
+- Branch name
+- Goal
+- Files to edit
+- Implementation steps
+- Test plan
+- Rollback plan
+- Risk level
+
+Ask CEO for approval before editing code.
+
+## Commit Rules
+
+Use Conventional Commits:
+
+feat: add life timer calculation
+fix: correct habit streak reset
+refactor: split timer store
+chore: update dependencies
+docs: add setup notes
+test: add timer logic tests
+
+## Pull Request Template
+
+When implementation is done, prepare PR text:
+
+### Title
+
+[type]: [TASK-ID] short description
+
+### Summary
+
+- What changed
+- Why it changed
+
+### Changes
+
+- change 1
+- change 2
+- change 3
+
+### Test Plan
+
+- command/test 1
+- manual step 1
+- manual step 2
+
+### Screenshots
+
+Add if UI changed.
+
+### Risks
+
+- known risk
+- rollback option
+
+### Checklist
+
+- [ ] TypeScript passes
+- [ ] Lint passes
+- [ ] App runs locally
+- [ ] Edge cases checked
+- [ ] No secrets added
+- [ ] No unrelated files changed
+
+## Git Safety
+
+Never run without explicit CEO approval:
+
+- git push
+- gh pr create
+- git reset --hard
+- git push --force
+- git clean -fd
+
+## Preferred Flow
+
+1. Create/checkout branch
+2. Implement selected task
+3. Run checks
+4. Summarize changed files
+5. Prepare commit message
+6. Ask CEO before commit
+7. Ask CEO before push
+8. Ask CEO before PR creation
