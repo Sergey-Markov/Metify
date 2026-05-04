@@ -9,7 +9,8 @@
  *   - Completed goals (той самий фільтр категорій + чіп «Виконані»)
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -31,6 +32,7 @@ import { GoalDetailSheet } from "../../src/components/GoalScreen/GoalDetailSheet
 import { GoalsOverallProgress } from "../../src/components/GoalScreen/GoalsOverallProgress";
 import { useGoalActions, useGoalsSummary } from "../../src/hooks/goalsHabits";
 import { useGoalsHabitsStore } from "../../src/store/useGoalsHabitsStore";
+import { usePresetPickerStore } from "../../src/store/usePresetPickerStore";
 import type {
   Goal,
   GoalCategory,
@@ -65,7 +67,9 @@ function sortCompletedDesc(a: Goal, b: Goal): number {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 const GoalsScreen = () => {
+  const router = useRouter();
   const goals = useGoalsHabitsStore((s) => s.goals);
+  const selectedGoalPresetId = usePresetPickerStore((s) => s.selectedGoalPresetId);
   const activeGoals = useMemo(
     () => goals.filter((g) => g.status === "active"),
     [goals],
@@ -91,6 +95,11 @@ const GoalsScreen = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showDone, setShowDone] = useState(false);
+
+  useEffect(() => {
+    if (!selectedGoalPresetId) return;
+    setShowAdd(true);
+  }, [selectedGoalPresetId]);
 
   const requestDeleteGoal = useCallback(
     (id: string) => {
@@ -229,7 +238,7 @@ const GoalsScreen = () => {
         return (
           <EmptyGoals
             onAdd={() => setShowAdd(true)}
-            onUsePopular={() => setShowAdd(true)}
+            onUsePopular={() => router.push({ pathname: "/presets", params: { mode: "goal" } })}
             filtered={filterCat !== "all"}
           />
         );
@@ -239,7 +248,7 @@ const GoalsScreen = () => {
         return (
           <EmptyGoals
             onAdd={() => setShowAdd(true)}
-            onUsePopular={() => setShowAdd(true)}
+            onUsePopular={() => router.push({ pathname: "/presets", params: { mode: "goal" } })}
             completedEmpty
           />
         );
@@ -269,6 +278,7 @@ const GoalsScreen = () => {
       openDetail,
       reopenGoal,
       requestDeleteGoal,
+      router,
       showDone,
       toggleDone,
     ],

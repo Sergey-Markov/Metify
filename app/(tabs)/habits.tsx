@@ -9,7 +9,8 @@
  *   - Add-habit bottom sheet
  */
 
-import React, { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import {
   GestureHandlerRootView,
@@ -22,17 +23,25 @@ import { HabitCard } from "../../src/components/HabitsScreen/HabitCard";
 import { HabitDetailSheet } from "../../src/components/HabitsScreen/HabitDetailSheet";
 import { HabitsAgenda } from "../../src/components/HabitsScreen/HabitsAgenda";
 import { useHabitActions, useHabitsToday } from "../../src/hooks/goalsHabits";
+import { usePresetPickerStore } from "../../src/store/usePresetPickerStore";
 import type { Habit } from "../../src/types/goalsHabits";
 import { BtnIcon } from "../../src/UI/BtnIcon";
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HabitsScreen() {
+  const router = useRouter();
   const { habits, pending, done } = useHabitsToday();
   const { checkHabit, addHabit, deleteHabit } = useHabitActions();
+  const selectedHabitPresetId = usePresetPickerStore((s) => s.selectedHabitPresetId);
 
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
+
+  useEffect(() => {
+    if (!selectedHabitPresetId) return;
+    setShowAddSheet(true);
+  }, [selectedHabitPresetId]);
 
   const openDetail = useCallback((h: Habit) => setSelectedHabit(h), []);
   const closeDetail = useCallback(() => setSelectedHabit(null), []);
@@ -138,14 +147,14 @@ export default function HabitsScreen() {
         return (
           <EmptyHabits
             onAdd={() => setShowAddSheet(true)}
-            onUsePopular={() => setShowAddSheet(true)}
+            onUsePopular={() => router.push({ pathname: "/presets", params: { mode: "habit" } })}
           />
         );
       }
 
       return <View style={s.listSpacer} />;
     },
-    [checkHabit, openDetail, requestDeleteHabit],
+    [checkHabit, openDetail, requestDeleteHabit, router],
   );
 
   return (
