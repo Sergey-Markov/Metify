@@ -229,6 +229,7 @@ const GoalsScreen = () => {
         return (
           <EmptyGoals
             onAdd={() => setShowAdd(true)}
+            onUsePopular={() => setShowAdd(true)}
             filtered={filterCat !== "all"}
           />
         );
@@ -238,6 +239,7 @@ const GoalsScreen = () => {
         return (
           <EmptyGoals
             onAdd={() => setShowAdd(true)}
+            onUsePopular={() => setShowAdd(true)}
             completedEmpty
           />
         );

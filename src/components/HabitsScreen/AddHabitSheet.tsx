@@ -2,7 +2,7 @@
  * Bottom sheet: створення нової звички.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -12,12 +12,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { ScrollView } from "react-native-gesture-handler";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { AddHabitDraft } from "../../store/useGoalsHabitsStore";
 import type { HabitCategory } from "../../types/goalsHabits";
+import { HABIT_PRESETS } from "../../constants/presets";
+import { usePresetPickerStore } from "../../store/usePresetPickerStore";
 import { BottomSheetModal, Btn, BtnIcon } from "../../UI";
 import { AutoGrowTextInput } from "../../UI/AutoGrowTextInput";
 
@@ -74,6 +77,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  presetsSection: { marginBottom: 12 },
+  sectionLabel: {
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: colors.muted,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  presetsRow: { marginBottom: 10 },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    backgroundColor: "rgba(255,255,255,0.01)",
+    marginRight: 8,
+  },
+  presetChipText: { fontSize: 13, color: colors.text },
   emojiGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -171,6 +194,9 @@ export type AddHabitSheetProps = {
 };
 
 export const AddHabitSheet = ({ onClose, onSave }: AddHabitSheetProps) => {
+  const router = useRouter();
+  const selectedHabitPresetId = usePresetPickerStore((s) => s.selectedHabitPresetId);
+  const consumeHabitPreset = usePresetPickerStore((s) => s.consumeHabitPreset);
   const insets = useSafeAreaInsets();
   const [emoji, setEmoji] = useState("🎯");
   const [customEmojiOpen, setCustomEmojiOpen] = useState(false);
@@ -216,6 +242,27 @@ export const AddHabitSheet = ({ onClose, onSave }: AddHabitSheetProps) => {
     });
   }, [title, emoji, category, freq, onSave]);
 
+  const applyPreset = useCallback(
+    (presetId: string) => {
+      const preset = HABIT_PRESETS.find((item) => item.id === presetId);
+      if (!preset) return;
+      setTitle(preset.title);
+      setEmoji(preset.emoji);
+      setCategory(preset.category);
+      setFreq(preset.frequency);
+      setCustomEmojiOpen(false);
+      Keyboard.dismiss();
+    },
+    [setTitle],
+  );
+
+  useEffect(() => {
+    if (!selectedHabitPresetId) return;
+    const pickedPresetId = consumeHabitPreset();
+    if (!pickedPresetId) return;
+    applyPreset(pickedPresetId);
+  }, [applyPreset, consumeHabitPreset, selectedHabitPresetId]);
+
   return (
     <BottomSheetModal
       onClose={onClose}
@@ -231,6 +278,48 @@ export const AddHabitSheet = ({ onClose, onSave }: AddHabitSheetProps) => {
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
         <Text style={styles.sheetTitle}>Нова звичка</Text>
+        <View style={styles.presetsSection}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={styles.sectionLabel}>Популярні шаблони</Text>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({ pathname: "/presets", params: { mode: "habit" } })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Переглянути всі шаблони звичок. Усього ${HABIT_PRESETS.length}`}
+            >
+              <Text style={{ fontSize: 12, color: colors.accent }}>
+                Всі ({HABIT_PRESETS.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={styles.presetsRow}
+          >
+            {HABIT_PRESETS.slice(0, 6).map((preset) => (
+              <TouchableOpacity
+                key={preset.id}
+                style={styles.presetChip}
+                onPress={() => applyPreset(preset.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Заповнити форму шаблоном: ${preset.title}`}
+              >
+                <Text style={styles.presetChipText}>
+                  {preset.emoji} {preset.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         <View style={styles.emojiGrid}>
           {pickerEmojis.map((e) => (

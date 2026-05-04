@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
 
 export type EmptyGoalsProps = {
   onAdd: () => void;
+  onUsePopular?: () => void;
   /** Активні цілі: застосовано фільтр категорії */
   filtered?: boolean;
   /** Порожній список виконаних (чіп «Виконані») */
@@ -52,6 +53,7 @@ export type EmptyGoalsProps = {
 
 export const EmptyGoals = ({
   onAdd,
+  onUsePopular,
   filtered = false,
   completedEmpty = false,
 }: EmptyGoalsProps) => {
@@ -79,12 +81,24 @@ export const EmptyGoals = ({
           : "Визначте, чого хочете досягти.\nВізуалізуйте прогрес кожного дня."}
       </Text>
       {!filtered && (
-        <TouchableOpacity
-          style={styles.emptyBtn}
-          onPress={onAdd}
-        >
-          <Text style={styles.emptyBtnText}>Поставити першу ціль</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.emptyBtn}
+            onPress={onAdd}
+          >
+            <Text style={styles.emptyBtnText}>Поставити першу ціль</Text>
+          </TouchableOpacity>
+          {onUsePopular ? (
+            <TouchableOpacity
+              style={[styles.emptyBtn, { marginTop: 10 }]}
+              onPress={onUsePopular}
+              accessibilityRole="button"
+              accessibilityLabel="Обрати популярну ціль"
+            >
+              <Text style={styles.emptyBtnText}>Обрати з популярних</Text>
+            </TouchableOpacity>
+          ) : null}
+        </>
       )}
     </View>
   );

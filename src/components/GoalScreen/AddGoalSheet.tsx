@@ -1,7 +1,8 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import React, { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Platform,
@@ -24,6 +25,10 @@ import type {
   GoalPriority,
   Milestone,
 } from "../../types/goalsHabits";
+import {
+  GOAL_PRESETS,
+} from "../../constants/presets";
+import { usePresetPickerStore } from "../../store/usePresetPickerStore";
 import { AutoGrowTextInput } from "../../UI/AutoGrowTextInput";
 import { makeMilestoneId } from "../../utils/goalsHabits";
 import { GoalCategoryFilterChip } from "./GoalCategoryFilterChip";
@@ -153,6 +158,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: "500",
   },
+  presetsRow: { marginBottom: 14 },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    backgroundColor: "rgba(255,255,255,0.01)",
+    marginRight: 8,
+  },
+  presetChipText: { fontSize: 13, color: colors.text },
   freqRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
   freqOpt: {
     flex: 1,
@@ -272,6 +288,9 @@ export const AddGoalSheet = ({
   onSave,
   initialGoal,
 }: AddGoalSheetProps) => {
+  const router = useRouter();
+  const selectedGoalPresetId = usePresetPickerStore((s) => s.selectedGoalPresetId);
+  const consumeGoalPreset = usePresetPickerStore((s) => s.consumeGoalPreset);
   const insets = useSafeAreaInsets();
   const [title, setTitle] = useState(() => initialGoal?.title ?? "");
   const [category, setCategory] = useState<GoalCategory>(
@@ -334,6 +353,30 @@ export const AddGoalSheet = ({
       prev.map((m, idx) => (idx === i ? { ...m, title: val } : m)),
     );
   };
+
+  const applyGoalPreset = useCallback((presetId: string) => {
+    const preset = GOAL_PRESETS.find((item) => item.id === presetId);
+    if (!preset) return;
+    setTitle(preset.title);
+    setCategory(preset.category);
+    setPriority(preset.priority);
+    setMsRows(
+      preset.milestoneTitles.length > 0
+        ? preset.milestoneTitles.map((milestoneTitle, index) => ({
+            rowKey: `preset_${preset.id}_${index}`,
+            title: milestoneTitle,
+            completed: false,
+          }))
+        : [emptyMilestoneRow(`preset_${preset.id}_empty`)],
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGoalPresetId) return;
+    const pickedPresetId = consumeGoalPreset();
+    if (!pickedPresetId) return;
+    applyGoalPreset(pickedPresetId);
+  }, [applyGoalPreset, consumeGoalPreset, selectedGoalPresetId]);
   const addMsField = () =>
     setMsRows((prev) => [
       ...prev,
@@ -393,6 +436,49 @@ export const AddGoalSheet = ({
         <Text style={styles.sheetTitle}>
           {initialGoal ? "Редагування цілі" : "Нова ціль"}
         </Text>
+
+        {!initialGoal ? (
+          <>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text style={styles.fieldLabel}>Популярні шаблони</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({ pathname: "/presets", params: { mode: "goal" } })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`Переглянути всі шаблони цілей. Усього ${GOAL_PRESETS.length}`}
+              >
+                <Text style={{ fontSize: 12, color: colors.accent }}>
+                  Всі ({GOAL_PRESETS.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.presetsRow}
+            >
+              {GOAL_PRESETS.slice(0, 6).map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  style={styles.presetChip}
+                  onPress={() => applyGoalPreset(preset.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Заповнити форму шаблоном: ${preset.title}`}
+                >
+                  <Text style={styles.presetChipText}>{preset.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
         <AutoGrowTextInput
           style={styles.input}

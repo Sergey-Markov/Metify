@@ -135,7 +135,12 @@ export default function HabitsScreen() {
       }
 
       if (item.type === "empty") {
-        return <EmptyHabits onAdd={() => setShowAddSheet(true)} />;
+        return (
+          <EmptyHabits
+            onAdd={() => setShowAddSheet(true)}
+            onUsePopular={() => setShowAddSheet(true)}
+          />
+        );
       }
 
       return <View style={s.listSpacer} />;

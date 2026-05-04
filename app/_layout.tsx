@@ -1,17 +1,17 @@
-import { useEffect, useState } from "react";
 import {
-  useRouter,
-  usePathname,
   Stack,
   useNavigationContainerRef,
+  usePathname,
+  useRouter,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
-  useLifeTimerStore,
   selectOnboarding,
+  useLifeTimerStore,
 } from "../src/store/useLifeTimerStore";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const rootNav = useNavigationContainerRef();
   const isOnboardingComplete = useLifeTimerStore(selectOnboarding);
-  const [hydrated, setHydrated] = useState(() => useLifeTimerStore.persist.hasHydrated());
+  const [hydrated, setHydrated] = useState(() =>
+    useLifeTimerStore.persist.hasHydrated(),
+  );
 
   useEffect(() => {
     const unsub = useLifeTimerStore.persist.onFinishHydration(() => {

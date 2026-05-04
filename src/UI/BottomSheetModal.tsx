@@ -3,8 +3,8 @@ import {
   DimensionValue,
   Pressable,
   StyleSheet,
-  View,
   useWindowDimensions,
+  View,
 } from "react-native";
 import {
   Gesture,

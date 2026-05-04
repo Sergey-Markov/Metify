@@ -44,9 +44,10 @@ const styles = StyleSheet.create({
 
 export type EmptyHabitsProps = {
   onAdd: () => void;
+  onUsePopular?: () => void;
 };
 
-export const EmptyHabits = ({ onAdd }: EmptyHabitsProps) => {
+export const EmptyHabits = ({ onAdd, onUsePopular }: EmptyHabitsProps) => {
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyIcon}>🌱</Text>
@@ -60,6 +61,16 @@ export const EmptyHabits = ({ onAdd }: EmptyHabitsProps) => {
       >
         <Text style={styles.emptyBtnText}>Додати звичку</Text>
       </TouchableOpacity>
+      {onUsePopular ? (
+        <TouchableOpacity
+          style={[styles.emptyBtn, { marginTop: 10 }]}
+          onPress={onUsePopular}
+          accessibilityRole="button"
+          accessibilityLabel="Обрати популярну звичку"
+        >
+          <Text style={styles.emptyBtnText}>Обрати з популярних</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
