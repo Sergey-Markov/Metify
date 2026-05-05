@@ -56,6 +56,9 @@ export interface InsightInput {
   habitConsistency: number;
   missedHabits: number;
   activityScore: number;
+  shortActionsPlannedToday: number;
+  shortActionsDoneToday: number;
+  shortActionsCompletionRate: number;
   energyLevel?: number;
 }
 

@@ -105,3 +105,34 @@ npx jest src/utils/__tests__
 | Subscriptions       | `store/useSubscriptionStore.ts` + RevenueCat SDK  |
 | Push notifications  | `utils/notifications.ts` + expo-notifications     |
 | i18n                | `constants/i18n/` + i18next                       |
+
+## Insights + AI Life Policy
+
+### 1. Short actions must influence insights
+
+- `todayActions` are not visual-only tasks; they are a behavioral signal for analytics.
+- Completed short actions affect:
+  - life-balance metrics (`focusScore`, `wastedTimeEstimate`);
+  - generated AI insights (hero, red zones, recommendations);
+  - recommendation difficulty/next-step calibration.
+
+### 2. AI-driven life expectancy (primary mode)
+
+- Life expectancy recalculation is handled by AI as the primary strategy.
+- Inputs include profile, goals/habits behavior, and short-actions execution trends.
+- AI output is saved as the active life estimate and used by countdown-related insights.
+
+### 3. Offline/safety fallback (secondary mode)
+
+- If internet is unavailable, API key is missing, or AI call fails, app uses local deterministic fallback logic.
+- Fallback must keep the app fully functional and preserve last valid estimate where possible.
+- On recovery, AI mode can refresh and replace fallback-derived estimates.
+
+### 4. Recalculation cadence (not daily)
+
+- Life expectancy is **not** recalculated every day.
+- Recalculation should happen on controlled triggers only:
+  - major profile/lifestyle changes;
+  - meaningful behavior shifts (multi-day trend changes);
+  - scheduled periodic refresh (e.g. weekly), not daily.
+- Goal: avoid noisy swings, keep feedback stable and trustworthy.

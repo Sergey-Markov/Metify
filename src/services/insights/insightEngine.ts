@@ -1,6 +1,6 @@
 import type { InsightInput } from "../../features/insights/types";
 import { clamp } from "../storage/storageUtils";
-import type { StoredGoalInsight } from "../storage/goalsStorage";
+import type { StoredGoalInsight, StoredTodayActionInsight } from "../storage/goalsStorage";
 import type { StoredHabitInsight } from "../storage/habitsStorage";
 import type { UserInsightProfile } from "../storage/userStorage";
 
@@ -107,10 +107,29 @@ function calcActivityScore(sessionsPerWeek: number): number {
   return clamp(Math.round((sessionsPerWeek / 14) * 100), 0, 100);
 }
 
+function calcShortActions(todayActions: StoredTodayActionInsight[], now: Date): {
+  shortActionsPlannedToday: number;
+  shortActionsDoneToday: number;
+  shortActionsCompletionRate: number;
+} {
+  const todayKey = now.toISOString().slice(0, 10);
+  const todayItems = todayActions.filter((action) => action.date === todayKey);
+  const planned = todayItems.length;
+  const done = todayItems.filter((action) => action.status === "done").length;
+  const rate = planned > 0 ? done / planned : 0;
+
+  return {
+    shortActionsPlannedToday: planned,
+    shortActionsDoneToday: done,
+    shortActionsCompletionRate: Number(rate.toFixed(2)),
+  };
+}
+
 export interface InsightEngineInput {
   profile: UserInsightProfile;
   goals: StoredGoalInsight[];
   habits: StoredHabitInsight[];
+  todayActions: StoredTodayActionInsight[];
   sessionsPerWeek: number;
   now?: Date;
 }
@@ -128,6 +147,7 @@ export function buildInsightInput(params: InsightEngineInput): InsightEngineOutp
   const goals = calcGoals(params.goals, now);
   const habits = calcHabits(params.habits, now);
   const activityScore = calcActivityScore(params.sessionsPerWeek);
+  const shortActions = calcShortActions(params.todayActions, now);
 
   return {
     input: {
@@ -138,6 +158,9 @@ export function buildInsightInput(params: InsightEngineInput): InsightEngineOutp
       habitConsistency: habits.habitConsistency,
       missedHabits: habits.missedHabits,
       activityScore,
+      shortActionsPlannedToday: shortActions.shortActionsPlannedToday,
+      shortActionsDoneToday: shortActions.shortActionsDoneToday,
+      shortActionsCompletionRate: shortActions.shortActionsCompletionRate,
       energyLevel: params.profile.energyLevel,
     },
     strongestHabit: habits.strongestHabit,

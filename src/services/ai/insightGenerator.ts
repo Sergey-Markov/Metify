@@ -47,6 +47,9 @@ async function requestInsight(prompt: string): Promise<string> {
 }
 
 export function fallbackHeroInsight(input: InsightInput): string {
+  if (input.shortActionsPlannedToday > 0 && input.shortActionsCompletionRate >= 0.7) {
+    return "Ви добре переводите інсайти в конкретні кроки. Продовжуйте цей ритм виконання коротких дій.";
+  }
   if (input.goalDelay > 20) {
     return "Ви почали відставати від своїх цілей. Спробуйте трохи скоригувати темп і зменшити розпорошення.";
   }
@@ -58,7 +61,7 @@ export function fallbackHeroInsight(input: InsightInput): string {
 
 export async function generateHeroInsight(input: InsightInput): Promise<string> {
   return requestInsight(
-    `Create a daily hero insight.\nData:\n- goalProgress: ${input.goalProgress}%\n- expectedProgress: ${input.expectedProgress}%\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- lifeRemainingDays: ${input.lifeRemainingDays}\n- activityScore: ${input.activityScore}`,
+    `Create a daily hero insight.\nData:\n- goalProgress: ${input.goalProgress}%\n- expectedProgress: ${input.expectedProgress}%\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- lifeRemainingDays: ${input.lifeRemainingDays}\n- activityScore: ${input.activityScore}\n- shortActionsPlannedToday: ${input.shortActionsPlannedToday}\n- shortActionsDoneToday: ${input.shortActionsDoneToday}\n- shortActionsCompletionRate: ${input.shortActionsCompletionRate}`,
   );
 }
 
@@ -70,13 +73,13 @@ export async function generateGoalInsight(input: InsightInput): Promise<string> 
 
 export async function generateHabitInsight(input: InsightInput): Promise<string> {
   return requestInsight(
-    `Generate a concise habits behavior insight.\nData:\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}`,
+    `Generate a concise habits behavior insight.\nData:\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}\n- shortActionsCompletionRate: ${input.shortActionsCompletionRate}`,
   );
 }
 
 export async function generateRedZone(input: InsightInput): Promise<string[]> {
   const text = await requestInsight(
-    `Generate 2 short red-zone observations as separate lines.\nData:\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}`,
+    `Generate 2 short red-zone observations as separate lines.\nData:\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}\n- shortActionsCompletionRate: ${input.shortActionsCompletionRate}`,
   );
   return text
     .split("\n")
@@ -87,7 +90,7 @@ export async function generateRedZone(input: InsightInput): Promise<string[]> {
 
 export async function generateRecommendations(input: InsightInput): Promise<string[]> {
   const text = await requestInsight(
-    `Generate 3 executable recommendations as separate lines.\nData:\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}\n- energyLevel: ${input.energyLevel ?? "unknown"}`,
+    `Generate 3 executable recommendations as separate lines.\nData:\n- goalDelay: ${input.goalDelay}\n- habitConsistency: ${input.habitConsistency}\n- missedHabits: ${input.missedHabits}\n- activityScore: ${input.activityScore}\n- shortActionsCompletionRate: ${input.shortActionsCompletionRate}\n- energyLevel: ${input.energyLevel ?? "unknown"}`,
   );
   return text
     .split("\n")
@@ -104,6 +107,9 @@ export function fallbackRedZone(input: InsightInput): string[] {
   if (input.habitConsistency < 0.5) {
     items.push("Низька стабільність звичок зменшує накопичувальний прогрес.");
   }
+  if (input.shortActionsPlannedToday > 0 && input.shortActionsCompletionRate < 0.4) {
+    items.push("Короткі дії часто залишаються незавершеними, тому інсайти не переходять у результат.");
+  }
   if (items.length === 0) {
     items.push("Критичних зон зараз небагато, але важливо утримувати регулярність.");
   }
@@ -115,6 +121,9 @@ export function fallbackRecommendations(input: InsightInput): string[] {
   if (input.goalDelay > 20) result.push("Завершіть сьогодні одну важливу 10-хвилинну задачу по головній цілі.");
   if (input.habitConsistency < 0.5) result.push("Спростіть найскладнішу звичку до мінімальної версії на 3 дні.");
   if (input.activityScore < 40) result.push("Виділіть один короткий фокус-блок у застосунку до вечора.");
+  if (input.shortActionsPlannedToday > 0 && input.shortActionsCompletionRate < 0.6) {
+    result.push("Закрийте хоча б одну додану коротку дію до кінця дня, щоб закріпити імпульс.");
+  }
   if (!result.length) result.push("Продовжуйте поточний ритм і закріпіть один маленький виграш сьогодні.");
   return result.slice(0, 3);
 }

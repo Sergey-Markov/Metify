@@ -13,6 +13,12 @@ type GoalsHabitsPersistedState = {
     priority?: GoalPriority;
     status?: "active" | "completed" | "archived";
   }[];
+  todayActions?: {
+    id?: string;
+    title?: string;
+    date?: string;
+    status?: "planned" | "done";
+  }[];
 };
 
 export interface StoredGoalInsight {
@@ -22,6 +28,13 @@ export interface StoredGoalInsight {
   deadline: string;
   progress: number;
   priority: GoalPriority;
+}
+
+export interface StoredTodayActionInsight {
+  id: string;
+  title: string;
+  date: string;
+  status: "planned" | "done";
 }
 
 export async function getStoredGoals(): Promise<StoredGoalInsight[]> {
@@ -38,5 +51,19 @@ export async function getStoredGoals(): Promise<StoredGoalInsight[]> {
       deadline: goal.targetDate as string,
       progress: typeof goal.progress === "number" ? Math.min(100, Math.max(0, goal.progress)) : 0,
       priority: goal.priority ?? "medium",
+    }));
+}
+
+export async function getStoredTodayActions(): Promise<StoredTodayActionInsight[]> {
+  const state = await readPersistedState<GoalsHabitsPersistedState>(GOALS_HABITS_STORAGE_KEY);
+  const todayActions = state?.todayActions ?? [];
+
+  return todayActions
+    .filter((action) => Boolean(action.id && action.title && action.date && action.status))
+    .map((action) => ({
+      id: action.id as string,
+      title: action.title as string,
+      date: action.date as string,
+      status: action.status as "planned" | "done",
     }));
 }
