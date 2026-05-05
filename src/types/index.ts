@@ -1,21 +1,47 @@
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
 export type Gender = "male" | "female" | "other";
-export type AlcoholLevel = "low" | "medium" | "high";
+export type AlcoholLevel = "none" | "low" | "medium" | "high";
 export type ActivityLevel = "low" | "medium" | "high";
 export type SleepQuality = "poor" | "average" | "good";
+export type SmokingStatus = "never" | "former" | "current";
+export type StressLevel = 1 | 2 | 3 | 4 | 5;
+export type WorkType = "sedentary" | "mixed" | "physical" | "night_shift" | "irregular";
+
+export interface ChronicConditions {
+  hypertension: boolean;
+  diabetes: boolean;
+  cardiovascular: boolean;
+}
 
 export interface LifestyleFactors {
   smoking: boolean;
+  smokingStatus: SmokingStatus;
+  cigarettesPerDay: number;
   alcohol: AlcoholLevel;
+  alcoholUnitsPerWeek: number;
   activity: ActivityLevel;
+  activityType: string;
+  activityMinutesPerWeek: number;
   sleep: SleepQuality;
+  sleepHours: number;
+  heightCm: number;
+  weightKg: number;
+  stressLevel: StressLevel;
+  workType: WorkType;
+  profession: string;
+  workHoursPerWeek: number;
+  socialConnectionsPerWeek: number;
+  sexualContactsPerMonth: number;
+  annualCheckup: boolean;
+  chronicConditions: ChronicConditions;
 }
 
 export interface UserProfile {
   dateOfBirth: string; // ISO date string YYYY-MM-DD
   country: CountryCode;
   gender: Gender;
+  additionalNotes: string;
   lifestyle: LifestyleFactors;
 }
 

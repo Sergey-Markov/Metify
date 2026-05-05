@@ -7,20 +7,22 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Platform,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { Btn } from "../../src/UI/Btn";
 import { COUNTRY_MAP } from "../../src/constants";
 import {
   useLifeTimerStore,
   selectProfile,
   selectAdjustedYears,
 } from "../../src/store/useLifeTimerStore";
+import { useGoalsHabitsStore } from "../../src/store/useGoalsHabitsStore";
 import type { AlcoholLevel, ActivityLevel, Gender, SleepQuality } from "../../src/types";
 
 const GENDER_UK: Record<Gender, string> = {
@@ -30,6 +32,7 @@ const GENDER_UK: Record<Gender, string> = {
 };
 
 const ALCOHOL_UK: Record<AlcoholLevel, string> = {
+  none: "Не вживаю",
   low: "Мало",
   medium: "Помірно",
   high: "Часто",
@@ -45,6 +48,26 @@ const SLEEP_UK: Record<SleepQuality, string> = {
   poor: "Поганий",
   average: "Нормальний",
   good: "Чудовий",
+};
+
+const SMOKING_STATUS_UK: Record<
+  "never" | "former" | "current",
+  string
+> = {
+  never: "Не палю",
+  former: "Кинув(ла)",
+  current: "Палю",
+};
+
+const WORK_TYPE_UK: Record<
+  "sedentary" | "mixed" | "physical" | "night_shift" | "irregular",
+  string
+> = {
+  sedentary: "Сидяча",
+  mixed: "Змішана",
+  physical: "Фізична",
+  night_shift: "Нічні зміни",
+  irregular: "Нерегулярний графік",
 };
 
 const colors = {
@@ -63,6 +86,7 @@ export default function ProfileScreen() {
   const adjustedYears = useLifeTimerStore(selectAdjustedYears);
   const lifeExpectancy = useLifeTimerStore((s) => s.lifeExpectancy);
   const resetApp = useLifeTimerStore((s) => s.resetApp);
+  const resetGoalsHabits = useGoalsHabitsStore((s) => s.resetAllData);
 
   const countryLabel = COUNTRY_MAP[profile.country]?.label ?? profile.country;
 
@@ -87,14 +111,23 @@ export default function ProfileScreen() {
         {
           text: "Скинути",
           style: "destructive",
-          onPress: () => {
-            resetApp();
-            router.replace("/onboarding");
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              resetApp();
+              resetGoalsHabits();
+              router.replace("/onboarding");
+            } catch {
+              Alert.alert(
+                "Не вдалося очистити дані",
+                "Спробуй ще раз. Якщо проблема повториться, перезапусти застосунок.",
+              );
+            }
           },
         },
       ]
     );
-  }, [resetApp, router]);
+  }, [resetApp, resetGoalsHabits, router]);
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
@@ -111,6 +144,7 @@ export default function ProfileScreen() {
           <Row label="Дата народження" value={profile.dateOfBirth || "—"} />
           <Row label="Країна" value={countryLabel} />
           <Row label="Стать" value={GENDER_UK[profile.gender]} />
+          <Row label="Додаткова інформація" value={profile.additionalNotes.trim() || "—"} />
         </View>
 
         <View style={s.card}>
@@ -119,9 +153,83 @@ export default function ProfileScreen() {
             label="Куріння"
             value={profile.lifestyle.smoking ? "Так" : "Ні"}
           />
+          <Row
+            label="Статус куріння"
+            value={SMOKING_STATUS_UK[profile.lifestyle.smokingStatus]}
+          />
+          {profile.lifestyle.smokingStatus === "current" ? (
+            <Row
+              label="Сигарет на день"
+              value={String(profile.lifestyle.cigarettesPerDay)}
+            />
+          ) : null}
           <Row label="Алкоголь" value={ALCOHOL_UK[profile.lifestyle.alcohol]} />
+          {profile.lifestyle.alcohol !== "none" ? (
+            <Row
+              label="Порцій алкоголю / тиждень"
+              value={String(profile.lifestyle.alcoholUnitsPerWeek)}
+            />
+          ) : null}
           <Row label="Активність" value={ACTIVITY_UK[profile.lifestyle.activity]} />
+          <Row
+            label="Тип активності"
+            value={profile.lifestyle.activityType.trim() || "—"}
+          />
+          <Row
+            label="Хвилин активності / тиждень"
+            value={String(profile.lifestyle.activityMinutesPerWeek)}
+          />
           <Row label="Сон" value={SLEEP_UK[profile.lifestyle.sleep]} />
+          <Row
+            label="Годин сну / добу"
+            value={profile.lifestyle.sleepHours.toFixed(1)}
+          />
+        </View>
+
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Додаткові фактори</Text>
+          <Row label="Зріст (см)" value={profile.lifestyle.heightCm.toFixed(1)} />
+          <Row label="Вага (кг)" value={profile.lifestyle.weightKg.toFixed(1)} />
+          <Row
+            label="Рівень стресу"
+            value={`${profile.lifestyle.stressLevel} / 5`}
+          />
+          <Row
+            label="Тип роботи"
+            value={WORK_TYPE_UK[profile.lifestyle.workType]}
+          />
+          <Row
+            label="Професія"
+            value={profile.lifestyle.profession.trim() || "—"}
+          />
+          <Row
+            label="Годин роботи / тиждень"
+            value={String(profile.lifestyle.workHoursPerWeek)}
+          />
+          <Row
+            label="Соц. контакти / тиждень"
+            value={String(profile.lifestyle.socialConnectionsPerWeek)}
+          />
+          <Row
+            label="Статеві контакти / місяць"
+            value={String(profile.lifestyle.sexualContactsPerMonth)}
+          />
+          <Row
+            label="Щорічний медогляд"
+            value={profile.lifestyle.annualCheckup ? "Так" : "Ні"}
+          />
+          <Row
+            label="Хронічні стани"
+            value={[
+              profile.lifestyle.chronicConditions.hypertension ? "гіпертонія" : null,
+              profile.lifestyle.chronicConditions.diabetes ? "діабет" : null,
+              profile.lifestyle.chronicConditions.cardiovascular
+                ? "серцево-судинні"
+                : null,
+            ]
+              .filter(Boolean)
+              .join(", ") || "Немає"}
+          />
         </View>
 
         <View style={s.card}>
@@ -133,14 +241,15 @@ export default function ProfileScreen() {
           {deathLabel ? <Row label="Орієнтовна дата" value={deathLabel} /> : null}
         </View>
 
-        <TouchableOpacity
+        <Btn
+          variant="danger"
           style={s.resetBtn}
           onPress={onReset}
-          accessibilityRole="button"
           accessibilityLabel="Скинути дані таймера та пройти онбординг знову"
+          accessibilityHint="Очищає профіль, цілі, звички, локальну базу даних і кеш на цьому пристрої"
         >
-          <Text style={s.resetBtnText}>Скинути дані таймера</Text>
-        </TouchableOpacity>
+          Скинути всі дані користувача
+        </Btn>
 
         <Text style={s.footerNote}>
           Щоб змінити відповіді без повного скидання, наразі скористайся кнопкою
@@ -217,11 +326,6 @@ const s = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: "rgba(196,90,90,0.45)",
     alignItems: "center",
-  },
-  resetBtnText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.danger,
   },
   footerNote: {
     marginTop: 16,

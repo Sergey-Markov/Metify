@@ -26,8 +26,33 @@ interface LifeTimerState {
 
   // Actions
   updateProfile: (partial: Partial<UserProfile>) => void;
-  completeOnboarding: (profile: UserProfile) => void;
+  completeOnboarding: (profile: UserProfile, lifeExpectancy?: LifeExpectancyResult) => void;
   resetApp: () => void;
+}
+
+type PersistedLifeTimerState = {
+  profile?: Partial<UserProfile>;
+  isOnboardingComplete?: boolean;
+  lifeExpectancy?: LifeExpectancyResult | null;
+};
+
+function normalizeProfile(profile?: Partial<UserProfile>): UserProfile {
+  if (!profile) {
+    return DEFAULT_PROFILE;
+  }
+
+  return {
+    ...DEFAULT_PROFILE,
+    ...profile,
+    lifestyle: {
+      ...DEFAULT_PROFILE.lifestyle,
+      ...profile.lifestyle,
+      chronicConditions: {
+        ...DEFAULT_PROFILE.lifestyle.chronicConditions,
+        ...profile.lifestyle?.chronicConditions,
+      },
+    },
+  };
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -45,8 +70,8 @@ export const useLifeTimerStore = create<LifeTimerState>()(
           return { profile: updatedProfile };
         }),
 
-      completeOnboarding: (profile) => {
-        const lifeExpectancy = calculateLifeExpectancy(profile);
+      completeOnboarding: (profile, lifeExpectancyOverride) => {
+        const lifeExpectancy = lifeExpectancyOverride ?? calculateLifeExpectancy(profile);
         set({ profile, lifeExpectancy, isOnboardingComplete: true });
       },
 
@@ -66,6 +91,18 @@ export const useLifeTimerStore = create<LifeTimerState>()(
         isOnboardingComplete: state.isOnboardingComplete,
         lifeExpectancy: state.lifeExpectancy,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as PersistedLifeTimerState | undefined;
+
+        return {
+          ...currentState,
+          ...persisted,
+          profile: normalizeProfile(persisted?.profile),
+          lifeExpectancy: persisted?.lifeExpectancy ?? currentState.lifeExpectancy,
+          isOnboardingComplete:
+            persisted?.isOnboardingComplete ?? currentState.isOnboardingComplete,
+        };
+      },
     }
   )
 );

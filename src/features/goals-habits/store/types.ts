@@ -33,4 +33,5 @@ export interface GoalsHabitsState {
 
   addTodayAction: (title: string) => void;
   completeTodayAction: (id: string) => void;
+  resetAllData: () => void;
 }

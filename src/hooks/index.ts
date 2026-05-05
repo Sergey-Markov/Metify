@@ -6,7 +6,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
-import type { CountdownTime, WeekCell } from '../types';
+import type {
+  CountdownTime,
+  LifestyleFactors,
+  LifeExpectancyResult,
+  UserProfile,
+  WeekCell,
+} from '../types';
 import { buildCountdown, buildWeekGrid, getDailyMotivation } from '../utils/lifeCalculator';
 import { MOTIVATIONAL_MESSAGES, APP_CONFIG } from '../constants';
 import {
@@ -95,23 +101,24 @@ export function useOnboardingForm() {
   const completeOnboarding = useLifeTimerStore((s) => s.completeOnboarding);
 
   const setField = useCallback(
-    <K extends keyof typeof profile>(key: K, value: typeof profile[K]) => {
-      updateProfile({ [key]: value } as Partial<typeof profile>);
+    <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
+      updateProfile({ [key]: value } as Partial<UserProfile>);
     },
     [updateProfile]
   );
 
   const setLifestyle = useCallback(
-    <K extends keyof typeof profile.lifestyle>(key: K, value: typeof profile.lifestyle[K]) => {
+    <K extends keyof LifestyleFactors>(key: K, value: LifestyleFactors[K]) => {
+      const currentLifestyle = useLifeTimerStore.getState().profile.lifestyle;
       updateProfile({
-        lifestyle: { ...profile.lifestyle, [key]: value },
+        lifestyle: { ...currentLifestyle, [key]: value },
       });
     },
-    [profile.lifestyle, updateProfile]
+    [updateProfile]
   );
 
-  const submit = useCallback(() => {
-    completeOnboarding(profile);
+  const submit = useCallback((lifeExpectancy?: LifeExpectancyResult) => {
+    completeOnboarding(profile, lifeExpectancy);
   }, [completeOnboarding, profile]);
 
   return { profile, setField, setLifestyle, submit };

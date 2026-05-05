@@ -258,3 +258,251 @@ Status:
 Active
 
 ---
+
+### Decision: Approve Gemini onboarding AI upgrade
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed to make life expectancy estimation during onboarding more accurate by using Gemini AI and extending onboarding questions with additional health/lifestyle signals.
+
+Decision:
+Proceed with a two-mode estimation flow (local baseline + Gemini AI refinement), extend onboarding with essential risk-factor questions, and return structured AI output including estimated years, confidence, top factors, and improvement potential.
+
+Reasoning:
+This improves estimate quality while keeping reliability through deterministic fallback and preserves a calm motivational UX with explainable results.
+
+Alternatives considered:
+
+- Keep current minimal onboarding questions and simple local formula only
+- Use Gemini without structured output and without confidence/factor breakdown
+
+Risks:
+
+- Longer onboarding may reduce completion rate if not split into core vs optional steps
+- AI response variability can break parsing without strict schema validation
+
+Status:
+Active
+
+---
+
+### Decision: Approve Gemini onboarding task breakdown
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed approval for the proposed implementation split (TASK-012..TASK-017) to upgrade onboarding life expectancy flow with Gemini and explainable output.
+
+Decision:
+Approve the task breakdown and proceed with single-task implementation flow per PR.
+
+Reasoning:
+The breakdown is PR-sized, reduces integration risk, and preserves clean sequencing from data model to UI and QA.
+
+Alternatives considered:
+
+- Implement everything in one PR
+- Start directly from UI without updating data contracts first
+
+Risks:
+
+- Sequential dependency between tasks can delay visible UI changes
+- Schema drift risk if model updates are partially applied
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-012 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval for TASK-012 scope, branch strategy, files, risks, and test plan before editing code.
+
+Decision:
+Approve PR plan for TASK-012 to extend onboarding data contracts and store normalization with backward compatibility, without changing onboarding UI behavior.
+
+Reasoning:
+Starting from typed data foundations reduces downstream risk for AI estimation and keeps subsequent onboarding/UI tasks incremental.
+
+Alternatives considered:
+
+- Start with onboarding UI changes first
+- Skip backward compatibility and require fresh storage
+
+Risks:
+
+- Persisted state merge bugs can affect existing users
+- Partial profile updates may overwrite nested lifestyle fields if not normalized
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-013 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval for onboarding UI expansion to collect new risk-factor fields in core and optional advanced steps.
+
+Decision:
+Approve PR plan for TASK-013 to add onboarding questions and navigation updates without changing the data contract introduced in TASK-012.
+
+Reasoning:
+This enables richer AI-ready input while keeping rollout incremental and reducing regression risk.
+
+Alternatives considered:
+
+- Skip optional advanced step and keep only core questions
+- Postpone onboarding UI and proceed directly to AI output changes
+
+Risks:
+
+- Longer onboarding can reduce completion if flow feels heavy
+- Step navigation regressions may affect submit/skip behavior
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-014 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval to move life expectancy AI integration to structured Gemini JSON output with robust validation and fallback behavior.
+
+Decision:
+Approve TASK-014 plan to implement strict JSON contract, type guards, normalization, and fallback-safe parsing while preserving compatibility for existing callers.
+
+Reasoning:
+Structured output reduces parsing failures and enables explainable AI results for upcoming onboarding and insights enhancements.
+
+Alternatives considered:
+
+- Keep plain text parsing with regex year extraction
+- Add prompt tweaks only without schema validation
+
+Risks:
+
+- Gemini may still return malformed content despite prompt constraints
+- Overly strict parser may reject partially valid responses
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-015 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval for dual-mode life expectancy orchestration with baseline and AI-refined values plus cache/storage compatibility.
+
+Decision:
+Approve TASK-015 plan to store baseline and refined life expectancy metadata, preserve years-only compatibility, and keep insights flow fallback-safe.
+
+Reasoning:
+This enables explainable AI upgrades without breaking existing insights consumers or persisted cache behavior.
+
+Alternatives considered:
+
+- Keep years-only cache and ignore AI metadata
+- Add orchestration only in memory without storage changes
+
+Risks:
+
+- Backward compatibility bugs when reading old cache records
+- Inconsistent effective years if refined payload is partial
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-016 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval to show explainable life expectancy result on onboarding final step using baseline and AI-refined values.
+
+Decision:
+Approve TASK-016 plan to add onboarding result cards with refined years, confidence, top factors, and improvement potential with graceful fallback.
+
+Reasoning:
+Explainable output increases trust and aligns onboarding with reflective premium product tone.
+
+Alternatives considered:
+
+- Keep final onboarding step static without personalized metrics
+- Show only one final number without factor breakdown
+
+Risks:
+
+- Too much text can reduce clarity on small screens
+- AI preview timing may introduce temporary loading states
+
+Status:
+Active
+
+---
+
+### Decision: Approve TASK-017 PR plan
+
+Date: 2026-05-05
+
+Approved by:
+CEO
+
+Context:
+Needed pre-implementation approval for final QA pass covering onboarding AI flow, fallback resilience, and regression checks before commit stage.
+
+Decision:
+Approve TASK-017 plan to execute end-to-end QA, document findings, and apply only minimal fixes required for merge-readiness.
+
+Reasoning:
+A dedicated QA gate reduces hidden regressions after rapid multi-task delivery and provides explicit residual-risk visibility.
+
+Alternatives considered:
+
+- Skip QA pass and proceed directly to commit
+- Run QA without documenting outcomes in repo docs
+
+Risks:
+
+- Some issues may remain device-specific and require real device verification
+- Existing unrelated warnings can mask new warnings if not tracked
+
+Status:
+Active
+
+---

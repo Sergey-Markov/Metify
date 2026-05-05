@@ -9,7 +9,7 @@ import {
   generateRecommendations,
   generateRedZone,
 } from "../ai/insightGenerator";
-import { generateLifeExpectancyYearsWithAI } from "../ai/lifeExpectancyGenerator";
+import { generateLifeExpectancyEstimateWithAI } from "../ai/lifeExpectancyGenerator";
 import { getStoredGoals, getStoredTodayActions } from "../storage/goalsStorage";
 import {
   getCachedInsights,
@@ -18,6 +18,7 @@ import {
   setCachedInsights,
 } from "../storage/insightsStorage";
 import {
+  createLifeExpectancyCacheRecord,
   getLifeExpectancyCache,
   setLifeExpectancyCache,
 } from "../storage/lifeExpectancyStorage";
@@ -207,15 +208,17 @@ export async function getInsights(options?: GetInsightsOptions): Promise<Insight
     cache: lifeCache,
   });
 
-  let effectiveLifeExpectancyYears = lifeCache?.years ?? profile.lifeExpectancyYears;
+  const baselineLifeExpectancyYears = profile.lifeExpectancyYears;
+  let effectiveLifeExpectancyYears = lifeCache?.refinedYears ?? lifeCache?.years ?? baselineLifeExpectancyYears;
   if (shouldRecalculateLife) {
     try {
-      effectiveLifeExpectancyYears = await generateLifeExpectancyYearsWithAI({
-        baseLifeExpectancyYears: profile.lifeExpectancyYears,
+      const estimate = await generateLifeExpectancyEstimateWithAI({
+        baseLifeExpectancyYears: baselineLifeExpectancyYears,
         smokes: profile.smokes,
         drinks: profile.drinks,
         sportActivity: profile.sportActivity,
         energyLevel: profile.energyLevel,
+        additionalNotes: profile.additionalNotes,
         goalsProgress:
           goals.length > 0
             ? goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length
@@ -234,14 +237,19 @@ export async function getInsights(options?: GetInsightsOptions): Promise<Insight
             : 0,
         shortActionsCompletionRate,
       });
-      await setLifeExpectancyCache({
-        years: effectiveLifeExpectancyYears,
-        calculatedAt: now.toISOString(),
-        profileSignature,
-        behaviorScore,
-      });
+      effectiveLifeExpectancyYears = estimate.estimatedYears;
+      await setLifeExpectancyCache(
+        createLifeExpectancyCacheRecord({
+          baselineYears: baselineLifeExpectancyYears,
+          estimate,
+          calculatedAt: now.toISOString(),
+          profileSignature,
+          behaviorScore,
+        }),
+      );
     } catch {
-      effectiveLifeExpectancyYears = lifeCache?.years ?? profile.lifeExpectancyYears;
+      effectiveLifeExpectancyYears =
+        lifeCache?.refinedYears ?? lifeCache?.years ?? baselineLifeExpectancyYears;
     }
   }
 

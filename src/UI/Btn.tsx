@@ -11,6 +11,7 @@ import {
 const palette = {
   green: "#4ecb8d",
   accent: "#c8a96e",
+  danger: "#c45a5a",
 };
 
 const styles = StyleSheet.create({
@@ -29,12 +30,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(200,169,110,0.08)",
     borderColor: "rgba(200,169,110,0.15)",
   },
+  danger: {
+    backgroundColor: "rgba(196,90,90,0.12)",
+    borderColor: "rgba(196,90,90,0.45)",
+  },
   textBase: { fontSize: 14 },
   textSuccess: { color: palette.green, fontWeight: "500" },
   textAccent: { color: palette.accent },
+  textDanger: { color: palette.danger, fontWeight: "600" },
 });
 
-export type BtnVariant = "success" | "accent";
+export type BtnVariant = "success" | "accent" | "danger";
 
 export type BtnProps = {
   children: ReactNode;
@@ -61,7 +67,11 @@ export const Btn = ({
     <TouchableOpacity
       style={[
         styles.base,
-        variant === "success" ? styles.success : styles.accent,
+        variant === "success"
+          ? styles.success
+          : variant === "danger"
+            ? styles.danger
+            : styles.accent,
         style,
       ]}
       onPress={onPress}
@@ -74,7 +84,11 @@ export const Btn = ({
       <Text
         style={[
           styles.textBase,
-          variant === "success" ? styles.textSuccess : styles.textAccent,
+          variant === "success"
+            ? styles.textSuccess
+            : variant === "danger"
+              ? styles.textDanger
+              : styles.textAccent,
           textStyle,
         ]}
       >

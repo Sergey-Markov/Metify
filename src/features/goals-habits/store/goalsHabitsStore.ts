@@ -220,6 +220,13 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
               : action
           ),
         })),
+
+      resetAllData: () =>
+        set({
+          goals: [],
+          habits: [],
+          todayActions: [],
+        }),
     }),
     {
       name: 'lifetimer-goals-habits',

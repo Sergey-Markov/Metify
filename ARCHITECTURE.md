@@ -136,3 +136,17 @@ npx jest src/utils/__tests__
   - meaningful behavior shifts (multi-day trend changes);
   - scheduled periodic refresh (e.g. weekly), not daily.
 - Goal: avoid noisy swings, keep feedback stable and trustworthy.
+
+## QA Pass (TASK-017)
+
+Date: 2026-05-05
+
+Validated:
+- Onboarding flow now supports extended core + optional risk-factor questions and reaches final step without blocking.
+- Final onboarding step renders explainable estimate card (baseline -> AI refined), confidence badge, improvement potential, and top factors.
+- Gemini estimation has graceful fallback when key/network/JSON is invalid, keeping UI functional.
+- Life expectancy cache supports both legacy years-only records and new structured records (baseline/refined metadata).
+- Lint check passes with no errors.
+
+Known risk:
+- One pre-existing warning remains in `app/(tabs)/goals.tsx` (`react-hooks/exhaustive-deps` on `toggleDone` callback); unrelated to onboarding AI tasks.
