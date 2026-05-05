@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ICON_SIZE = 22;
@@ -70,6 +70,39 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="insights"
+        options={{
+          title: "Інсайти",
+          tabBarIcon: ({ focused }) => (
+            <View style={[s.centerIconWrap, focused && s.centerIconWrapFocused]}>
+              <Ionicons
+                accessible={false}
+                name={focused ? "sparkles" : "sparkles-outline"}
+                size={20}
+                color={focused ? "#0a0b0f" : ACCENT}
+              />
+            </View>
+          ),
+          tabBarButton: (props) => {
+            const isSelected = props.accessibilityState?.selected ?? false;
+            return (
+              <Pressable
+                {...props}
+                style={[props.style, s.centerButton]}
+                accessibilityRole="tab"
+                accessibilityLabel="Інсайти"
+                accessibilityHint="Відкрити персональні інсайти й рефлексію"
+              >
+                <View style={[s.centerButtonInner, isSelected && s.centerButtonInnerFocused]}>
+                  {props.children}
+                </View>
+              </Pressable>
+            );
+          },
+          tabBarAccessibilityLabel: "Інсайти",
+        }}
+      />
+      <Tabs.Screen
         name="habits"
         options={{
           title: "Звички",
@@ -102,3 +135,39 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const s = StyleSheet.create({
+  centerButton: {
+    marginTop: -16,
+  },
+  centerButtonInner: {
+    minWidth: 74,
+    minHeight: 58,
+    borderRadius: 22,
+    backgroundColor: "#111318",
+    borderWidth: 0.5,
+    borderColor: "#3a3d4a",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  centerButtonInnerFocused: {
+    backgroundColor: "rgba(200,169,110,0.2)",
+    borderColor: "rgba(200,169,110,0.8)",
+  },
+  centerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(200,169,110,0.14)",
+  },
+  centerIconWrapFocused: {
+    backgroundColor: ACCENT,
+  },
+});

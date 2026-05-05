@@ -16,7 +16,8 @@ const palette = {
 const styles = StyleSheet.create({
   base: {
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     alignItems: "center",
     borderWidth: 0.5,
   },
@@ -58,7 +59,11 @@ export const Btn = ({
 }: BtnProps) => {
   return (
     <TouchableOpacity
-      style={[styles.base, variant === "success" ? styles.success : styles.accent, style]}
+      style={[
+        styles.base,
+        variant === "success" ? styles.success : styles.accent,
+        style,
+      ]}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"

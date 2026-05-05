@@ -132,3 +132,5 @@ export function useAppStats() {
 
   return { countdown, motivation, morningsLeft, percentLived, livedWeeks, totalWeeks };
 }
+
+export { useInsights } from "./useInsights";
