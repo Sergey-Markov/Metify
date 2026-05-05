@@ -1,4 +1,4 @@
-import type { Goal, Habit } from '../../../types/goalsHabits';
+import type { Goal, Habit, TodayAction } from '../../../types/goalsHabits';
 
 export type AddGoalDraft = Omit<Goal, 'id' | 'createdAt' | 'status' | 'progress'>;
 
@@ -10,6 +10,7 @@ export type AddHabitDraft = Omit<
 export interface GoalsHabitsState {
   goals: Goal[];
   habits: Habit[];
+  todayActions: TodayAction[];
 
   addGoal: (draft: AddGoalDraft) => void;
   updateGoal: (id: string, patch: Partial<Goal>) => void;
@@ -29,4 +30,7 @@ export interface GoalsHabitsState {
   updateHabit: (id: string, patch: Partial<Habit>) => void;
   checkHabit: (id: string) => void;
   deleteHabit: (id: string) => void;
+
+  addTodayAction: (title: string) => void;
+  completeTodayAction: (id: string) => void;
 }

@@ -5,7 +5,6 @@ import type { RecommendedAction } from "../../features/insights/types";
 
 type RecommendedActionCardProps = {
   action: RecommendedAction;
-  added: boolean;
   done: boolean;
   onAddToToday: () => void;
   onMarkDone: () => void;
@@ -13,7 +12,6 @@ type RecommendedActionCardProps = {
 
 export function RecommendedActionCard({
   action,
-  added,
   done,
   onAddToToday,
   onMarkDone,
@@ -24,12 +22,12 @@ export function RecommendedActionCard({
       <Text style={s.note}>{action.note}</Text>
       <View style={s.actionsRow}>
         <Pressable
-          style={[s.button, s.addBtn, added && s.addedBtn]}
+          style={[s.button, s.addBtn]}
           onPress={onAddToToday}
           accessibilityRole="button"
           accessibilityLabel={`Додати дію в сьогоднішній план ${action.title}`}
         >
-          <Text style={[s.buttonText, s.addText]}>{added ? "Додано" : "Додати на сьогодні"}</Text>
+          <Text style={[s.buttonText, s.addText]}>Додати на сьогодні</Text>
         </Pressable>
         <Pressable
           style={[s.button, s.doneBtn, done && s.doneBtnActive]}
@@ -84,10 +82,6 @@ const s = StyleSheet.create({
   addBtn: {
     borderColor: "#3a3d4a",
     backgroundColor: "#151922",
-  },
-  addedBtn: {
-    borderColor: "rgba(200,169,110,0.8)",
-    backgroundColor: "rgba(200,169,110,0.2)",
   },
   doneBtn: {
     borderColor: "rgba(200,169,110,0.8)",

@@ -5,18 +5,26 @@
  */
 
 import React, { memo } from "react";
-import { View, Text, ScrollView, StyleSheet, Platform } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Platform, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useLifeGrid, useAppStats } from "../../src/hooks";
+import { useGoalsHabitsStore } from "../../src/features/goals-habits/store";
+import type { TodayAction } from "../../src/types/goalsHabits";
 import type { WeekCell, CountdownTime } from "../../src/types";
 
 export default function HomeScreen() {
   const { countdown, motivation, morningsLeft, percentLived, livedWeeks, totalWeeks } =
     useAppStats();
   const { cells } = useLifeGrid();
+  const todayActions = useGoalsHabitsStore((s) => s.todayActions);
+  const completeTodayAction = useGoalsHabitsStore((s) => s.completeTodayAction);
 
   const today = new Date().toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const shortActions = todayActions
+    .filter((action) => action.date === todayKey)
+    .sort((a, b) => Number(a.status === "done") - Number(b.status === "done"));
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
@@ -48,6 +56,30 @@ export default function HomeScreen() {
           <StatCard value={`${percentLived}%`} label="Прожито" />
         </View>
 
+        <View style={s.quickSection}>
+          <View style={s.quickHeader}>
+            <Text style={s.quickTitle}>Короткі дії</Text>
+            <Text style={s.quickMeta}>{shortActions.length} на сьогодні</Text>
+          </View>
+          {shortActions.length > 0 ? (
+            <View style={s.quickList}>
+              {shortActions.map((action) => (
+                <TodayActionCard
+                  key={action.id}
+                  action={action}
+                  onDone={() => completeTodayAction(action.id)}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={s.quickEmpty}>
+              <Text style={s.quickEmptyText}>
+                Додайте рекомендацію з Інсайтів, щоб зʼявилась дія на сьогодні.
+              </Text>
+            </View>
+          )}
+        </View>
+
         <View style={s.gridSection}>
           <View style={s.gridHeader}>
             <Text style={s.gridTitle}>Тижні життя</Text>
@@ -73,6 +105,26 @@ const TimerGrid = memo(function TimerGrid({ countdown }: { countdown: CountdownT
   </View>
   );
 });
+
+function TodayActionCard({ action, onDone }: { action: TodayAction; onDone: () => void }) {
+  const done = action.status === "done";
+  return (
+    <View style={[s.quickCard, done && s.quickCardDone]}>
+      <Text style={s.quickCardTitle}>{action.title}</Text>
+      <Pressable
+        style={[s.quickActionBtn, done && s.quickActionBtnDone]}
+        onPress={onDone}
+        disabled={done}
+        accessibilityRole="button"
+        accessibilityLabel={`Позначити коротку дію ${action.title} як виконану`}
+      >
+        <Text style={[s.quickActionText, done && s.quickActionTextDone]}>
+          {done ? "Виконано" : "Позначити виконаним"}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 const TimerUnit = memo(function TimerUnit({ value, label }: { value: number; label: string }) {
   return (
@@ -210,6 +262,73 @@ const s = StyleSheet.create({
     color: colors.muted,
     textTransform: "uppercase",
     marginTop: 2,
+  },
+
+  quickSection: { paddingHorizontal: 28, marginBottom: 20 },
+  quickHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  quickTitle: {
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.muted,
+    textTransform: "uppercase",
+    fontWeight: "500",
+  },
+  quickMeta: { fontSize: 11, color: colors.accent },
+  quickList: { gap: 8 },
+  quickCard: {
+    backgroundColor: colors.bg2,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    padding: 12,
+    gap: 10,
+  },
+  quickCardDone: {
+    borderColor: "rgba(200,169,110,0.55)",
+    backgroundColor: "rgba(200,169,110,0.08)",
+  },
+  quickCardTitle: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  quickActionBtn: {
+    alignSelf: "flex-start",
+    minHeight: 36,
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    borderWidth: 0.5,
+    borderColor: "rgba(200,169,110,0.75)",
+    backgroundColor: colors.accent,
+  },
+  quickActionBtnDone: {
+    backgroundColor: "rgba(200,169,110,0.2)",
+  },
+  quickActionText: {
+    color: colors.bg,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  quickActionTextDone: {
+    color: colors.text,
+  },
+  quickEmpty: {
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: colors.subtle,
+    backgroundColor: colors.bg2,
+    padding: 14,
+  },
+  quickEmptyText: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   gridSection: { paddingHorizontal: 28, marginBottom: 28 },

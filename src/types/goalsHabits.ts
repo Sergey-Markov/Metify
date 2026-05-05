@@ -66,3 +66,18 @@ export interface HabitStats {
   completionRate: number; // 0–1 over last 30 days
   weeklyData: number[]; // completions per day last 7 days
 }
+
+// ─── Today Actions ────────────────────────────────────────────────────────────
+
+export type TodayActionStatus = "planned" | "done";
+export type TodayActionSource = "insight_recommendation";
+
+export interface TodayAction {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  status: TodayActionStatus;
+  source: TodayActionSource;
+  createdAt: string;
+  completedAt?: string;
+}

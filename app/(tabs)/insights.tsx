@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   Platform,
   ScrollView,
@@ -16,22 +17,20 @@ import { InsightsErrorState } from "../../src/components/InsightsScreen/Insights
 import { InsightHeroCard } from "../../src/components/InsightsScreen/InsightHeroCard";
 import { InsightsLoadingState } from "../../src/components/InsightsScreen/InsightsLoadingState";
 import { RecommendedActionCard } from "../../src/components/InsightsScreen/RecommendedActionCard";
+import { RecommendedActionsPlaceholder } from "../../src/components/InsightsScreen/RecommendedActionsPlaceholder";
 import { RedZoneCard } from "../../src/components/InsightsScreen/RedZoneCard";
+import { useGoalsHabitsStore } from "../../src/features/goals-habits/store";
 import { buildInsightsViewModel } from "../../src/features/insights/presenter";
 import { useInsights } from "../../src/hooks";
 import { Btn } from "../../src/UI/Btn";
 
-type ActionState = {
-  added: boolean;
-  done: boolean;
-};
-
 export default function InsightsScreen() {
+  const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
-  const [actionState, setActionState] = useState<Record<string, ActionState>>(
-    {},
-  );
   const { insights, isLoading, error, refresh } = useInsights();
+  const todayActions = useGoalsHabitsStore((s) => s.todayActions);
+  const addTodayAction = useGoalsHabitsStore((s) => s.addTodayAction);
+  const completeTodayAction = useGoalsHabitsStore((s) => s.completeTodayAction);
 
   const viewModel = useMemo(
     () => (insights ? buildInsightsViewModel(insights) : null),
@@ -49,22 +48,13 @@ export default function InsightsScreen() {
     });
   }, [insights?.generatedAt]);
 
-  const getActionState = (id: string): ActionState =>
-    actionState[id] ?? { added: false, done: false };
-
-  const handleAddToToday = (id: string) => {
-    setActionState((prev) => ({
-      ...prev,
-      [id]: { ...(prev[id] ?? { added: false, done: false }), added: true },
-    }));
-  };
-
-  const handleMarkDone = (id: string) => {
-    setActionState((prev) => ({
-      ...prev,
-      [id]: { ...(prev[id] ?? { added: false, done: false }), done: true },
-    }));
-  };
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const availableRecommendedActions = viewModel?.recommendedActions.filter((action) => {
+    const persistedAction = todayActions.find(
+      (item) => item.date === todayKey && item.title === action.title,
+    );
+    return !persistedAction;
+  }) ?? [];
 
   if (isLoading && !insights) {
     return (
@@ -165,19 +155,31 @@ export default function InsightsScreen() {
         <SectionTitle title="Рекомендовані дії" />
         <View style={[s.section, s.lastSection]}>
           <View style={s.stack}>
-            {viewModel.recommendedActions.map((action) => {
-              const state = getActionState(action.id);
+            {availableRecommendedActions.length > 0 ? (
+              availableRecommendedActions.map((action) => {
+              const persistedAction = todayActions.find(
+                (item) => item.date === todayKey && item.title === action.title,
+              );
+              const done = persistedAction?.status === "done";
               return (
                 <RecommendedActionCard
                   key={action.id}
                   action={action}
-                  added={state.added}
-                  done={state.done}
-                  onAddToToday={() => handleAddToToday(action.id)}
-                  onMarkDone={() => handleMarkDone(action.id)}
+                  done={done}
+                  onAddToToday={() => addTodayAction(action.title)}
+                  onMarkDone={() => {
+                    if (persistedAction) {
+                      completeTodayAction(persistedAction.id);
+                    }
+                  }}
                 />
               );
-            })}
+              })
+            ) : (
+              <RecommendedActionsPlaceholder
+                onGoToTimer={() => router.push("/(tabs)/home")}
+              />
+            )}
           </View>
         </View>
       </ScrollView>

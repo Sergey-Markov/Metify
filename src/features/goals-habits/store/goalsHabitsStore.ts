@@ -17,6 +17,7 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
     (set) => ({
       goals: [],
       habits: [],
+      todayActions: [],
 
       addGoal: (draft) =>
         set((s) => {
@@ -180,6 +181,45 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
 
       deleteHabit: (id) =>
         set((s) => ({ habits: s.habits.filter((h) => h.id !== id) })),
+
+      addTodayAction: (title) =>
+        set((s) => {
+          const trimmed = title.trim();
+          if (!trimmed) return s;
+
+          const today = new Date().toISOString().slice(0, 10);
+          const exists = s.todayActions.some(
+            (action) => action.date === today && action.title === trimmed
+          );
+          if (exists) return s;
+
+          return {
+            todayActions: [
+              ...s.todayActions,
+              {
+                id: `ta_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                title: trimmed,
+                date: today,
+                status: 'planned',
+                source: 'insight_recommendation',
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          };
+        }),
+
+      completeTodayAction: (id) =>
+        set((s) => ({
+          todayActions: s.todayActions.map((action) =>
+            action.id === id
+              ? {
+                  ...action,
+                  status: 'done',
+                  completedAt: action.completedAt ?? new Date().toISOString(),
+                }
+              : action
+          ),
+        })),
     }),
     {
       name: 'lifetimer-goals-habits',
