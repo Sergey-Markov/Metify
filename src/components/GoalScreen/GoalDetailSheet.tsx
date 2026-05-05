@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import DraggableFlatList, {
+  type RenderItemParams,
+} from "react-native-draggable-flatlist";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomSheetModal, Btn, BtnIcon } from "../../UI";
@@ -88,6 +91,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   detailActions: { gap: 10, marginTop: 20 },
+  dragHandle: {
+    color: colors.muted,
+    fontSize: 18,
+    letterSpacing: 1,
+    paddingHorizontal: 2,
+  },
+  milestoneDragging: {
+    backgroundColor: "#12141b",
+    borderRadius: 10,
+    borderBottomColor: "transparent",
+    paddingHorizontal: 8,
+  },
 });
 
 const KEYBOARD_AWARE_BOTTOM_OFFSET = 32;
@@ -100,6 +115,7 @@ export type GoalDetailSheetProps = {
   onAddMilestone: (title: string) => void;
   onUpdateMilestoneTitle: (milestoneId: string, title: string) => void;
   onDeleteMilestone: (milestoneId: string) => void;
+  onReorderMilestones: (orderedMilestoneIds: string[]) => void;
 };
 
 export const GoalDetailSheet = ({
@@ -110,13 +126,21 @@ export const GoalDetailSheet = ({
   onAddMilestone,
   onUpdateMilestoneTitle,
   onDeleteMilestone,
+  onReorderMilestones,
 }: GoalDetailSheetProps) => {
   const insets = useSafeAreaInsets();
   const [newMs, setNewMs] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [orderedMilestones, setOrderedMilestones] = useState<Milestone[]>(
+    goal.milestones,
+  );
   const canMutateMilestones = goal.status === "active";
   const milestoneEditLocked = editingId !== null;
+
+  useEffect(() => {
+    setOrderedMilestones(goal.milestones);
+  }, [goal.milestones]);
 
   useEffect(() => {
     if (editingId && !goal.milestones.some((m) => m.id === editingId)) {
@@ -170,6 +194,125 @@ export const GoalDetailSheet = ({
     ]);
   };
 
+  const handleMilestoneReorder = (nextMilestones: Milestone[]) => {
+    setOrderedMilestones(nextMilestones);
+    const orderedMilestoneIds = nextMilestones.map((milestone) => milestone.id);
+    const previousOrderIds = goal.milestones.map((milestone) => milestone.id);
+    const hasChangedOrder = orderedMilestoneIds.some(
+      (milestoneId, index) => milestoneId !== previousOrderIds[index],
+    );
+
+    if (hasChangedOrder) {
+      onReorderMilestones(orderedMilestoneIds);
+    }
+  };
+
+  const renderMilestoneItem = ({
+    item: m,
+    drag,
+    isActive,
+  }: RenderItemParams<Milestone>) => (
+    <View
+      style={[
+        styles.milestone,
+        editingId === m.id && styles.milestoneEditing,
+        isActive && styles.milestoneDragging,
+      ]}
+    >
+      <TouchableOpacity
+        onLongPress={drag}
+        delayLongPress={120}
+        disabled={!canMutateMilestones || milestoneEditLocked}
+        accessibilityRole="button"
+        accessibilityLabel={`Перемістити крок: ${m.title}`}
+        accessibilityHint="Затисніть і перетягніть, щоб змінити порядок кроків"
+      >
+        <Text style={styles.dragHandle}>⋮⋮</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => onToggleMilestone(m.id)}
+        disabled={!canMutateMilestones || milestoneEditLocked}
+        accessibilityRole="checkbox"
+        accessibilityState={{
+          checked: m.completed,
+          disabled: !canMutateMilestones || milestoneEditLocked,
+        }}
+        accessibilityLabel={
+          m.completed
+            ? "Крок виконано, зняти позначку"
+            : "Позначити крок виконаним"
+        }
+      >
+        <View style={[styles.msCheck, m.completed && styles.msCheckDone]}>
+          {m.completed && <Text style={styles.msCheckMark}>✓</Text>}
+        </View>
+      </TouchableOpacity>
+      {editingId === m.id ? (
+        <AutoGrowTextInput
+          style={styles.msTitleInput}
+          minInputHeight={40}
+          value={editDraft}
+          onChangeText={setEditDraft}
+          onSubmitEditing={commitEdit}
+          returnKeyType="done"
+          placeholder="Назва кроку"
+          placeholderTextColor={colors.muted}
+          accessibilityLabel="Редагування назви кроку"
+        />
+      ) : (
+        <Text
+          style={[styles.msTitle, m.completed && styles.msTitleDone]}
+          numberOfLines={4}
+        >
+          {m.title}
+        </Text>
+      )}
+      {canMutateMilestones && editingId === m.id ? (
+        <View style={[styles.msRowActions, styles.msRowActionsEdit]}>
+          <BtnIcon
+            shape="square"
+            dimension={36}
+            size={20}
+            name="close-outline"
+            color={colors.muted}
+            onPress={cancelEdit}
+            accessibilityLabel="Скасувати редагування кроку"
+          />
+          <BtnIcon
+            shape="square"
+            dimension={36}
+            size={22}
+            name="checkmark-outline"
+            color={colors.green}
+            onPress={commitEdit}
+            accessibilityLabel="Зберегти крок"
+          />
+        </View>
+      ) : canMutateMilestones ? (
+        <View style={styles.msRowActions}>
+          <BtnIcon
+            shape="square"
+            dimension={36}
+            size={20}
+            name="create-outline"
+            color={colors.accent}
+            onPress={() => startEdit(m)}
+            accessibilityLabel={`Змінити крок: ${m.title}`}
+          />
+          <BtnIcon
+            shape="square"
+            dimension={36}
+            size={20}
+            name="trash-outline"
+            color={colors.red}
+            onPress={() => confirmDeleteMilestone(m)}
+            accessibilityLabel={`Видалити крок: ${m.title}`}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+
   return (
     <BottomSheetModal onClose={onClose}>
       <KeyboardAwareScrollView
@@ -184,99 +327,17 @@ export const GoalDetailSheet = ({
         <View style={styles.milesSection}>
           <Text style={styles.milesTitle}>Кроки до цілі</Text>
 
-          {goal.milestones.map((m) => (
-            <View
-              key={m.id}
-              style={[
-                styles.milestone,
-                editingId === m.id && styles.milestoneEditing,
-              ]}
-            >
-              <TouchableOpacity
-                onPress={() => onToggleMilestone(m.id)}
-                disabled={!canMutateMilestones || milestoneEditLocked}
-                accessibilityRole="checkbox"
-                accessibilityState={{
-                  checked: m.completed,
-                  disabled: !canMutateMilestones || milestoneEditLocked,
-                }}
-                accessibilityLabel={
-                  m.completed
-                    ? "Крок виконано, зняти позначку"
-                    : "Позначити крок виконаним"
-                }
-              >
-                <View
-                  style={[styles.msCheck, m.completed && styles.msCheckDone]}
-                >
-                  {m.completed && <Text style={styles.msCheckMark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-              {editingId === m.id ? (
-                <AutoGrowTextInput
-                  style={styles.msTitleInput}
-                  minInputHeight={40}
-                  value={editDraft}
-                  onChangeText={setEditDraft}
-                  onSubmitEditing={commitEdit}
-                  returnKeyType="done"
-                  placeholder="Назва кроку"
-                  placeholderTextColor={colors.muted}
-                  accessibilityLabel="Редагування назви кроку"
-                />
-              ) : (
-                <Text
-                  style={[styles.msTitle, m.completed && styles.msTitleDone]}
-                  numberOfLines={4}
-                >
-                  {m.title}
-                </Text>
-              )}
-              {canMutateMilestones && editingId === m.id ? (
-                <View style={[styles.msRowActions, styles.msRowActionsEdit]}>
-                  <BtnIcon
-                    shape="square"
-                    dimension={36}
-                    size={20}
-                    name="close-outline"
-                    color={colors.muted}
-                    onPress={cancelEdit}
-                    accessibilityLabel="Скасувати редагування кроку"
-                  />
-                  <BtnIcon
-                    shape="square"
-                    dimension={36}
-                    size={22}
-                    name="checkmark-outline"
-                    color={colors.green}
-                    onPress={commitEdit}
-                    accessibilityLabel="Зберегти крок"
-                  />
-                </View>
-              ) : canMutateMilestones ? (
-                <View style={styles.msRowActions}>
-                  <BtnIcon
-                    shape="square"
-                    dimension={36}
-                    size={20}
-                    name="create-outline"
-                    color={colors.accent}
-                    onPress={() => startEdit(m)}
-                    accessibilityLabel={`Змінити крок: ${m.title}`}
-                  />
-                  <BtnIcon
-                    shape="square"
-                    dimension={36}
-                    size={20}
-                    name="trash-outline"
-                    color={colors.red}
-                    onPress={() => confirmDeleteMilestone(m)}
-                    accessibilityLabel={`Видалити крок: ${m.title}`}
-                  />
-                </View>
-              ) : null}
-            </View>
-          ))}
+          <DraggableFlatList
+            data={orderedMilestones}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMilestoneItem}
+            onDragEnd={({ data }) => handleMilestoneReorder(data)}
+            activationDistance={8}
+            autoscrollThreshold={32}
+            autoscrollSpeed={120}
+            containerStyle={styles.milesSection}
+            scrollEnabled={false}
+          />
 
           {canMutateMilestones && (
             <View style={styles.addMsRow}>

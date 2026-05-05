@@ -14,6 +14,7 @@ export function useGoalActions() {
       toggleMilestone: s.toggleMilestone,
       updateMilestoneTitle: s.updateMilestoneTitle,
       deleteMilestone: s.deleteMilestone,
+      reorderMilestones: s.reorderMilestones,
     }))
   );
 }

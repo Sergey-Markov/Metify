@@ -87,6 +87,7 @@ const GoalsScreen = () => {
     toggleMilestone,
     updateMilestoneTitle,
     deleteMilestone,
+    reorderMilestones,
   } = useGoalActions();
   const { avgProgress } = useGoalsSummary();
 
@@ -359,6 +360,9 @@ const GoalsScreen = () => {
             updateMilestoneTitle(liveSelectedGoal.id, mid, title)
           }
           onDeleteMilestone={(mid) => deleteMilestone(liveSelectedGoal.id, mid)}
+          onReorderMilestones={(orderedMilestoneIds) =>
+            reorderMilestones(liveSelectedGoal.id, orderedMilestoneIds)
+          }
         />
       )}
 

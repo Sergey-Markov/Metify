@@ -126,6 +126,31 @@ export const useGoalsHabitsStore = create<GoalsHabitsState>()(
           }),
         })),
 
+      reorderMilestones: (goalId, orderedMilestoneIds) =>
+        set((s) => ({
+          goals: s.goals.map((g) => {
+            if (g.id !== goalId) return g;
+            if (orderedMilestoneIds.length < 2 || g.milestones.length < 2) return g;
+
+            const milestoneById = new Map(g.milestones.map((m) => [m.id, m]));
+            const reordered = orderedMilestoneIds
+              .map((milestoneId) => milestoneById.get(milestoneId))
+              .filter((milestone): milestone is NonNullable<typeof milestone> =>
+                Boolean(milestone)
+              );
+
+            if (reordered.length !== g.milestones.length) {
+              return g;
+            }
+
+            return {
+              ...g,
+              milestones: reordered,
+              progress: computeGoalProgress({ ...g, milestones: reordered }),
+            };
+          }),
+        })),
+
       addHabit: (draft) =>
         set((s) => ({
           habits: [

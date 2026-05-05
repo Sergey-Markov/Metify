@@ -23,6 +23,7 @@ export interface GoalsHabitsState {
     title: string,
   ) => void;
   deleteMilestone: (goalId: string, milestoneId: string) => void;
+  reorderMilestones: (goalId: string, orderedMilestoneIds: string[]) => void;
 
   addHabit: (draft: AddHabitDraft) => void;
   updateHabit: (id: string, patch: Partial<Habit>) => void;
