@@ -11,10 +11,25 @@ const GEMINI_BASE_URL =
 const SHARED_RULES =
   "Tone: calm, supportive, human. Output: 1-2 short sentences. Avoid fear-based framing.";
 
+const DEFAULT_RESPONSE_LANGUAGE = "uk";
+
+function getPreferredResponseLanguage(): string {
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale?.toLowerCase();
+    if (!locale) return DEFAULT_RESPONSE_LANGUAGE;
+    const [language] = locale.split("-");
+    return language || DEFAULT_RESPONSE_LANGUAGE;
+  } catch {
+    return DEFAULT_RESPONSE_LANGUAGE;
+  }
+}
+
 async function requestInsight(prompt: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error("Missing Gemini API key.");
   }
+
+  const preferredLanguage = getPreferredResponseLanguage();
 
   const response = await fetch(`${GEMINI_BASE_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
@@ -27,7 +42,11 @@ async function requestInsight(prompt: string): Promise<string> {
           role: "user",
           parts: [
             {
-              text: `You write concise personal productivity insights.\n${SHARED_RULES}\n\n${prompt}`,
+              text: `You write concise personal productivity insights.
+${SHARED_RULES}
+Language: Always reply in the same language as the user's input. If language is unclear, reply in ${preferredLanguage}.
+
+${prompt}`,
             },
           ],
         },
